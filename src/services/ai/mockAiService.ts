@@ -27,6 +27,8 @@ export class MockAiService implements AiService {
       resultText = this.makeConversational(selectedText);
     } else if (lowerInstruction.includes('cta')) {
       resultText = `${selectedText} Make sure to hit subscribe and save this for later!`;
+    } else if (lowerInstruction.includes('transcript') || lowerInstruction.includes('structured')) {
+      resultText = `[HOOK]\n${selectedText.slice(0, 80)}...\n\n[CORE POINTS]\n• Main Insight: ${selectedText}\n• Key Takeaway: Focus on simplicity and clear execution.\n\n[VISUAL NOTE]\n[B-Roll: Screen recording demonstrating the technique]\n\n[CALL TO ACTION]\nDrop a comment with your thoughts below and subscribe for more!`;
     } else {
       resultText = selectedText
         ? `Here is an improved version: ${selectedText.replace(/\b(really|very|just|basically)\b/gi, '').trim()}`
