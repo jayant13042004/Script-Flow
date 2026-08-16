@@ -38,7 +38,7 @@ export function ScriptStatusBadge({ status, onChange, readOnly = false }: Script
     setIsOpen(false);
   };
 
-  const badgeClasses = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${currentConfig.color} ${!readOnly && onChange ? 'cursor-pointer' : 'cursor-default'}`;
+  const badgeClasses = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${currentConfig.color} ${!readOnly && onChange ? 'cursor-pointer hover:shadow-xs' : 'cursor-default'}`;
 
   if (readOnly || !onChange) {
     return (
@@ -49,28 +49,33 @@ export function ScriptStatusBadge({ status, onChange, readOnly = false }: Script
   }
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div className="relative inline-block z-30" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={badgeClasses}
       >
         {currentConfig.label}
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 ring-1 ring-black/5">
+          <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 mb-1">
+            Change Script Status
+          </div>
           {(Object.entries(statusConfig) as [ScriptStatus, typeof statusConfig[ScriptStatus]][]).map(([key, config]) => (
             <button
               key={key}
+              type="button"
               onClick={() => handleSelect(key as ScriptStatus)}
-              className="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors"
+              className="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
               <span className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${config.color.split(' ')[0]}`} />
-                <span className="text-gray-700 font-medium">{config.label}</span>
+                <span className="text-gray-800 font-medium">{config.label}</span>
               </span>
-              {status === key && <Check className="w-4 h-4 text-indigo-600" />}
+              {status === key && <Check className="w-3.5 h-3.5 text-blue-600" />}
             </button>
           ))}
         </div>

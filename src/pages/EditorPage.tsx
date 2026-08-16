@@ -310,7 +310,7 @@ export default function EditorPage() {
 
       {/* Top Bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 no-print">
-        <div className="px-4 h-14 flex items-center justify-between gap-4">
+        <div className="px-4 h-14 flex items-center justify-between gap-4 relative z-20">
           {/* Left */}
           <div className="flex items-center gap-3 min-w-0">
             <button
