@@ -285,4 +285,11 @@ export class MockAiService implements AiService {
       ]
     };
   }
+
+  async convertHandwritingToText(params: import('../../types/ai').ConvertHandwritingParams): Promise<import('../../types/ai').ConvertHandwritingResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return {
+      recognizedText: 'Here is the handwritten note transcribed into text:\n\n1. Hook: Start with the most counter-intuitive result.\n2. Story: Explain why conventional wisdom fails.\n3. Tactical Blueprint: Step 1, Step 2, and Step 3.\n4. Call To Action: Download the free resource.'
+    };
+  }
 }

@@ -40,6 +40,7 @@ import { YoutubeMetadataModal } from '../components/studio/YoutubeMetadataModal'
 import { SponsorBlockModal } from '../components/studio/SponsorBlockModal';
 import { ScriptTranslatorModal } from '../components/studio/ScriptTranslatorModal';
 import { ShortExtractorModal } from '../components/studio/ShortExtractorModal';
+import { HandwritingModal } from '../components/studio/HandwritingModal';
 import { StudioToolsDropdown } from '../components/studio/StudioToolsDropdown';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
 import { Mic, Tv, Share2, Upload, Volume2, BarChart2, Layers } from 'lucide-react';
@@ -96,6 +97,7 @@ export default function EditorPage() {
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showTranslatorModal, setShowTranslatorModal] = useState(false);
   const [showShortExtractorModal, setShowShortExtractorModal] = useState(false);
+  const [showHandwritingModal, setShowHandwritingModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -420,6 +422,7 @@ export default function EditorPage() {
               onOpenSponsorBlock={() => setShowSponsorModal(true)}
               onOpenTranslator={() => setShowTranslatorModal(true)}
               onOpenShortExtractor={() => setShowShortExtractorModal(true)}
+              onOpenHandwriting={() => setShowHandwritingModal(true)}
               onOpenShareModal={() => setShowShareModal(true)}
               onOpenAnalytics={() => setShowAnalyticsModal(true)}
               onOpenExport={() => setShowExportModal(true)}
@@ -459,36 +462,37 @@ export default function EditorPage() {
                 <button
                   onClick={() => setShowMenu(!showMenu)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="More actions"
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {showMenu && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                    <div className="absolute right-0 top-10 z-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 animate-scale-in">
+                    <div className="absolute right-0 top-8 z-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 animate-scale-in">
                       <button
-                        onClick={() => { setShowAnalyticsModal(true); setShowMenu(false); }}
+                        onClick={() => {
+                          setShowAnalyticsModal(true);
+                          setShowMenu(false);
+                        }}
                         className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                       >
-                        <BarChart2 className="w-3.5 h-3.5 text-blue-600" /> Script Analytics & Stats
+                        <BarChart2 className="w-3.5 h-3.5 text-blue-600" /> Script Analytics
                       </button>
                       <button
-                        onClick={() => { handleDuplicate(); setShowMenu(false); }}
+                        onClick={() => {
+                          if (id && user) duplicateScript(user.id, id);
+                          setShowMenu(false);
+                        }}
                         className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                       >
                         <Copy className="w-3.5 h-3.5" /> Duplicate Script
                       </button>
                       <button
                         onClick={() => {
-                          if (id) createVersion(id);
+                          setShowVersions(true);
                           setShowMenu(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                      >
-                        <History className="w-3.5 h-3.5" /> Save Version
-                      </button>
-                      <button
-                        onClick={() => { setShowVersions(true); setShowMenu(false); }}
                         className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                       >
                         <History className="w-3.5 h-3.5" /> Version History ({versions.length})
@@ -512,7 +516,10 @@ export default function EditorPage() {
         </div>
 
         {/* Editor Toolbar */}
-        <EditorToolbar editor={editor} />
+        <EditorToolbar
+          editor={editor}
+          onOpenHandwriting={() => setShowHandwritingModal(true)}
+        />
       </header>
 
       {/* Find & Replace */}
@@ -828,6 +835,18 @@ export default function EditorPage() {
               content: contentHtml,
             });
             navigate(`/editor/${newScript.id}`);
+          }
+        }}
+      />
+
+      {/* 6. Handwriting & Sketch Pad Modal (Write with Pen) */}
+      <HandwritingModal
+        isOpen={showHandwritingModal}
+        onClose={() => setShowHandwritingModal(false)}
+        onInsertText={(text) => {
+          if (editor) {
+            editor.commands.insertContent(text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>'));
+            setIsDirty(true);
           }
         }}
       />

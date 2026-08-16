@@ -7,10 +7,12 @@ import {
   AlignLeft, AlignCenter, Undo2, Redo2, Search,
   ChevronDown, Type, Check, X
 } from 'lucide-react';
+import { PenTool } from 'lucide-react';
 import { useEditorStore } from '../../stores/editorStore';
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  onOpenHandwriting?: () => void;
 }
 
 const HIGHLIGHT_COLORS = [
@@ -33,7 +35,7 @@ const FONT_SIZES = [
   { label: '32px', value: '32px', name: 'Title' },
 ];
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps) {
   const showFindReplace = useEditorStore(state => state.showFindReplace);
   const toggleFindReplace = useEditorStore(state => state.toggleFindReplace);
 
@@ -329,6 +331,15 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         icon={Search}
         title="Find & Replace (Ctrl+F)"
       />
+
+      {/* Handwriting / Sketch Pen Tool */}
+      {onOpenHandwriting && (
+        <ToolbarButton
+          onClick={onOpenHandwriting}
+          icon={PenTool}
+          title="Write with Pen (Handwriting & Sketch Pad)"
+        />
+      )}
     </div>
   );
 }

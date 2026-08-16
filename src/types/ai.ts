@@ -12,6 +12,15 @@ export interface AiService {
   generateSponsorBlock?(params: SponsorBlockParams): Promise<SponsorBlockResponse>;
   translateScript?(params: TranslateScriptParams): Promise<TranslateScriptResponse>;
   extractViralShorts?(params: ExtractShortsParams): Promise<ExtractShortsResponse>;
+  convertHandwritingToText?(params: ConvertHandwritingParams): Promise<ConvertHandwritingResponse>;
+}
+
+export interface ConvertHandwritingParams {
+  imageBase64: string;
+}
+
+export interface ConvertHandwritingResponse {
+  recognizedText: string;
 }
 
 // 1. Thumbnail Concepts

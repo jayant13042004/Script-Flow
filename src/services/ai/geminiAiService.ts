@@ -572,4 +572,70 @@ Output ONLY valid JSON matching this schema:
 
     return this.fallbackService.extractViralShorts ? this.fallbackService.extractViralShorts(params) : { shorts: [] };
   }
+
+  // 6. Convert Handwriting / Sketch Canvas to Clean Text
+  async convertHandwritingToText(params: import('../../types/ai').ConvertHandwritingParams): Promise<import('../../types/ai').ConvertHandwritingResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.convertHandwritingToText ? this.fallbackService.convertHandwritingToText(params) : { recognizedText: '' };
+    }
+
+    const cleanBase64 = params.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: 'You are an optical character recognition and handwriting transcription expert. Read and transcribe all handwritten text or notes drawn in this canvas image accurately. Return ONLY the transcribed text, preserving paragraph breaks, lists, and structure. Do not wrap in markdown quotes or preamble.',
+            },
+            {
+              inline_data: {
+                mime_type: 'image/png',
+                data: cleanBase64,
+              },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2048,
+      },
+    };
+
+    const modelsToTry = [
+      this.modelName,
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+    ].filter((value, index, self) => self.indexOf(value) === index);
+
+    for (const model of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.warn(`Gemini handwriting transcribe failed on ${model}:`, errText);
+          continue;
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (text) {
+          return { recognizedText: text.trim() };
+        }
+      } catch (err) {
+        console.warn(`Error transcribing handwriting with model ${model}:`, err);
+      }
+    }
+
+    return this.fallbackService.convertHandwritingToText ? this.fallbackService.convertHandwritingToText(params) : { recognizedText: '' };
+  }
 }
