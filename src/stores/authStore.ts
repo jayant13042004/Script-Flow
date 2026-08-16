@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import { generateId } from '../lib/utils';
-
-interface User {
-  id: string;
-  email: string;
-  displayName: string;
-}
+import {
+  signIn,
+  signUp,
+  signOut,
+  signInWithGoogle,
+  getCurrentUser,
+  onAuthStateChange,
+  type User,
+} from '../services/supabase/auth';
 
 interface AuthState {
   user: User | null;
@@ -13,7 +15,8 @@ interface AuthState {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, displayName: string) => Promise<void>;
-  logout: () => void;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
   initAuth: () => void;
 }
 
@@ -23,43 +26,56 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email, password) => {
-    // Mock login since we're using localStorage mode
-    const storedUser = localStorage.getItem('scriptflow_user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      if (user.email === email) {
-        set({ user, isAuthenticated: true });
-        return;
-      }
+    const { user, error } = await signIn(email, password);
+    if (error) {
+      throw new Error(error.message || 'Invalid email or password');
     }
-    // If not found but we want to allow login anyway for demo purposes
-    const newUser = { id: generateId(), email, displayName: email.split('@')[0] };
-    localStorage.setItem('scriptflow_user', JSON.stringify(newUser));
-    set({ user: newUser, isAuthenticated: true });
+    if (user) {
+      set({ user, isAuthenticated: true });
+    }
   },
 
   signup: async (email, password, displayName) => {
-    const newUser = { id: generateId(), email, displayName };
-    localStorage.setItem('scriptflow_user', JSON.stringify(newUser));
-    set({ user: newUser, isAuthenticated: true });
+    const { user, error } = await signUp(email, password, displayName);
+    if (error) {
+      throw new Error(error.message || 'Could not create account');
+    }
+    if (user) {
+      set({ user, isAuthenticated: true });
+    }
   },
 
-  logout: () => {
-    localStorage.removeItem('scriptflow_user');
+  loginWithGoogle: async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      throw new Error(error.message || 'Google sign-in failed');
+    }
+    // For real Supabase OAuth, the browser redirects to Google —
+    // the auth state will be picked up by onAuthStateChange after redirect.
+  },
+
+  logout: async () => {
+    await signOut();
     set({ user: null, isAuthenticated: false });
   },
 
   initAuth: () => {
-    try {
-      const storedUser = localStorage.getItem('scriptflow_user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        set({ user, isAuthenticated: true, isLoading: false });
-      } else {
-        set({ user: null, isAuthenticated: false, isLoading: false });
-      }
-    } catch (e) {
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
-  }
+    // First, check for an existing session
+    getCurrentUser().then((user) => {
+      set({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+      });
+    });
+
+    // Then, listen for auth state changes (handles OAuth callbacks, tab focus, etc.)
+    onAuthStateChange((user) => {
+      set({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+      });
+    });
+  },
 }));

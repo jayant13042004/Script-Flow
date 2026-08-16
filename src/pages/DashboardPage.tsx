@@ -250,9 +250,25 @@ export default function DashboardPage() {
 
             {user && (
               <div className="mt-8 pt-4 border-t border-gray-200">
-                <div className="px-3">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                <div className="px-3 flex items-center gap-3">
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.displayName}
+                      className="w-8 h-8 rounded-full flex-shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-semibold text-gray-600">
+                        {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.displayName}</p>
+                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  </div>
                 </div>
               </div>
             )}

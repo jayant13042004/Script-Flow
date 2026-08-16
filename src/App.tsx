@@ -4,6 +4,7 @@ import { useAuthStore } from './stores/authStore';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import EditorPage from './pages/EditorPage';
 import { ToastContainer } from './components/ui/Toast';
@@ -79,6 +80,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer />
