@@ -5,7 +5,9 @@ import type {
   RepurposeParams,
   AskParams,
   AiTextResponse,
-  AiGenerateResponse
+  AiGenerateResponse,
+  TranscribeAudioParams,
+  TranscribeAudioResponse
 } from '../../types/ai';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -102,6 +104,14 @@ export class MockAiService implements AiService {
     }
 
     return { result };
+  }
+
+  async transcribeAudio(_params: TranscribeAudioParams): Promise<TranscribeAudioResponse> {
+    await delay(1200);
+    return {
+      transcript: "I want to make a video about how creators can 10x their production speed using structured workflows and better hooks.",
+      structuredScript: "[HOOK]\nIf you're spending 10 hours writing a single video script, you are doing it completely wrong.\n\n[CORE POINTS]\n• Batch your ideas: Stop writing from scratch every single day.\n• Script your visuals first: Knowing your B-roll cuts writing time in half.\n• Eliminate filler: If a sentence doesn't advance the story, delete it.\n\n[VISUAL NOTES]\n[B-Roll: Screen capture of fast editing workflow]\n\n[CALL TO ACTION]\nSubscribe for weekly creator masterclasses and comment your biggest bottleneck below!"
+    };
   }
 
   private shortenText(text: string): string {

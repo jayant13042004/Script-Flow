@@ -5,7 +5,9 @@ import type {
   RepurposeParams,
   AskParams,
   AiTextResponse,
-  AiGenerateResponse
+  AiGenerateResponse,
+  TranscribeAudioParams,
+  TranscribeAudioResponse
 } from '../../types/ai';
 import { MockAiService } from './mockAiService';
 
@@ -236,5 +238,80 @@ Provide a concise, direct, and actionable response focusing on retention, pacing
     }
 
     return { result: resultText };
+  }
+
+  async transcribeAudio(params: TranscribeAudioParams): Promise<TranscribeAudioResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.transcribeAudio(params);
+    }
+
+    const modelsToTry = [
+      this.modelName,
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-3.6-flash',
+      'gemini-1.5-flash'
+    ].filter((value, index, self) => self.indexOf(value) === index);
+
+    const prompt = `You are ScriptFlow Voice Engine. Listen to this spoken audio recording from a content creator.
+1. Transcribe what they said as accurately as possible under the "transcript" key.
+2. Structure their thoughts into a clean, engaging video script (with Hook, Core Points, Visual Notes, and Call to Action) under the "structuredScript" key.
+
+Return JSON in this format:
+{
+  "transcript": "...",
+  "structuredScript": "..."
+}`;
+
+    for (const model of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+        const payload: any = {
+          contents: [
+            {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: params.mimeType || 'audio/webm',
+                    data: params.audioBase64,
+                  },
+                },
+                { text: prompt },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+          },
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.warn(`Gemini audio transcribe failed on ${model}:`, errText);
+          continue;
+        }
+
+        const data = await response.json();
+        const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (rawJson) {
+          const parsed = safeParseJSON<TranscribeAudioResponse>(rawJson);
+          return {
+            transcript: parsed.transcript || '',
+            structuredScript: parsed.structuredScript || '',
+          };
+        }
+      } catch (err) {
+        console.warn(`Error transcribing with model ${model}:`, err);
+      }
+    }
+
+    return this.fallbackService.transcribeAudio(params);
   }
 }

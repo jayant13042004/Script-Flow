@@ -5,6 +5,17 @@ export interface AiService {
   generateScript(params: GenerateScriptParams): Promise<AiGenerateResponse>;
   repurpose(params: RepurposeParams): Promise<AiTextResponse>;
   askAboutScript(params: AskParams): Promise<AiTextResponse>;
+  transcribeAudio?(params: TranscribeAudioParams): Promise<TranscribeAudioResponse>;
+}
+
+export interface TranscribeAudioParams {
+  audioBase64: string;
+  mimeType: string;
+}
+
+export interface TranscribeAudioResponse {
+  transcript: string;
+  structuredScript: string;
 }
 
 export interface ImproveTextParams {
