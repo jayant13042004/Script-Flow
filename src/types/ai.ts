@@ -5,7 +5,27 @@ export interface AiService {
   generateScript(params: GenerateScriptParams): Promise<AiGenerateResponse>;
   repurpose(params: RepurposeParams): Promise<AiTextResponse>;
   askAboutScript(params: AskParams): Promise<AiTextResponse>;
+  generateVideoIdeas?(params: GenerateVideoIdeasParams): Promise<GenerateVideoIdeasResponse>;
   transcribeAudio?(params: TranscribeAudioParams): Promise<TranscribeAudioResponse>;
+}
+
+export interface VideoIdea {
+  id: string;
+  title: string;
+  hook: string;
+  angle: string;
+  format: string;
+}
+
+export interface GenerateVideoIdeasParams {
+  pastScripts: { title: string; plainText?: string; platform?: string; contentType?: string }[];
+  count?: number;
+}
+
+export interface GenerateVideoIdeasResponse {
+  detectedNiche: string;
+  creatorStyle: string;
+  ideas: VideoIdea[];
 }
 
 export interface TranscribeAudioParams {

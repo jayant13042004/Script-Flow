@@ -314,4 +314,55 @@ Return JSON in this format:
 
     return this.fallbackService.transcribeAudio(params);
   }
+
+  async generateVideoIdeas(params: import('../../types/ai').GenerateVideoIdeasParams): Promise<import('../../types/ai').GenerateVideoIdeasResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.generateVideoIdeas ? this.fallbackService.generateVideoIdeas(params) : {
+        detectedNiche: 'General Content Creation',
+        creatorStyle: 'Educational & Storytelling',
+        ideas: []
+      };
+    }
+
+    const scriptsSummary = params.pastScripts
+      .slice(0, 15)
+      .map((s, i) => `Script ${i+1}: "${s.title}" (${s.contentType || 'General'}, ${s.platform || 'YouTube'})\nExcerpt: ${s.plainText?.slice(0, 200) || 'None'}`)
+      .join('\n\n');
+
+    const prompt = `You are a world-class YouTube viral content strategist.
+Analyze the creator's past scripts below to identify their exact niche, target audience, and creator style.
+Then brainstorm 6 to 10 highly engaging, high-CTR video ideas that fit naturally into their content channel.
+
+CREATOR'S PAST SCRIPTS:
+${scriptsSummary}
+
+Output ONLY valid JSON matching this schema:
+{
+  "detectedNiche": "e.g. Creator Economy & Video Production",
+  "creatorStyle": "e.g. Punchy, actionable storytelling with practical breakdowns",
+  "ideas": [
+    {
+      "id": "idea-1",
+      "title": "High-CTR, viral YouTube video title",
+      "hook": "Compelling 5-second opening hook line",
+      "angle": "Why this video will blow up in their niche based on past audience trends",
+      "format": "Tutorial / Breakdown / Story / Case Study"
+    }
+  ]
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').GenerateVideoIdeasResponse>(jsonText);
+      if (parsed?.ideas && parsed.ideas.length > 0) {
+        return parsed;
+      }
+    }
+
+    return this.fallbackService.generateVideoIdeas ? this.fallbackService.generateVideoIdeas(params) : {
+      detectedNiche: 'Digital Content Creation',
+      creatorStyle: 'Engaging & Direct',
+      ideas: []
+    };
+  }
 }

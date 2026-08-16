@@ -30,8 +30,9 @@ import { ExportModal } from '../components/editor/ExportModal';
 import { ImportModal } from '../components/editor/ImportModal';
 import { ShareModal } from '../components/share/ShareModal';
 import { AudioRecorder } from '../components/audio/AudioRecorder';
-import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
+import { ScriptStatusBadge, ScriptStatus } from '../components/dashboard/ScriptStatusBadge';
 import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
+import { VideoIdeasModal } from '../components/ai/VideoIdeasModal';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
 import { Mic, Tv, Share2, Upload, Volume2, BarChart2 } from 'lucide-react';
 
@@ -68,7 +69,7 @@ export default function EditorPage() {
   } = useEditorStore();
 
   const {
-    loadScript, updateScript, deleteScript, duplicateScript,
+    scripts, loadScripts, loadScript, updateScript, deleteScript, duplicateScript,
     createVersion, getVersions
   } = useScriptStore();
 
@@ -81,6 +82,7 @@ export default function EditorPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showIdeasModal, setShowIdeasModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -131,6 +133,9 @@ export default function EditorPage() {
 
   // Load script on mount
   useEffect(() => {
+    if (user?.id && scripts.length === 0) {
+      loadScripts(user.id);
+    }
     if (id) {
       setScriptId(id);
       loadScript(id).then((script) => {
@@ -367,6 +372,18 @@ export default function EditorPage() {
               <Tv className="w-3.5 h-3.5 text-emerald-600" />
               <span className="hidden sm:inline">Teleprompter</span>
             </button>
+
+            {/* AI Niche Ideas Button (when creator has 5+ past scripts) */}
+            {scripts.filter(s => s.plainText?.trim() || (s.title && s.title !== 'Untitled Script')).length >= 5 && (
+              <button
+                onClick={() => setShowIdeasModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200"
+                title="Generate video ideas tailored to your niche (5+ scripts detected)"
+              >
+                <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Video Ideas</span>
+              </button>
+            )}
 
             {/* AI Generate Button */}
             <button
@@ -744,6 +761,23 @@ export default function EditorPage() {
           }}
         />
       )}
+
+      {/* AI Niche Video Ideas Modal */}
+      <VideoIdeasModal
+        isOpen={showIdeasModal}
+        onClose={() => setShowIdeasModal(false)}
+        pastScripts={scripts}
+        onSelectIdea={(idea) => {
+          setTitle(idea.title);
+          if (editor) {
+            const hookBlock = idea.hook ? `<strong>[Hook]:</strong><br>${idea.hook}<br><br>` : '';
+            const angleBlock = idea.angle ? `<strong>[Angle / Outline]:</strong><br>${idea.angle}<br><br>` : '';
+            editor.commands.setContent(`<p>${hookBlock}${angleBlock}</p>`);
+          }
+          setIsDirty(true);
+          setShowIdeasModal(false);
+        }}
+      />
     </div>
   );
 }

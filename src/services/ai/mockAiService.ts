@@ -137,4 +137,57 @@ export class MockAiService implements AiService {
   private makeConversational(text: string): string {
     return `So here's the deal... ${text.charAt(0).toLowerCase() + text.slice(1)}`;
   }
+
+  async generateVideoIdeas(params: import('../../types/ai').GenerateVideoIdeasParams): Promise<import('../../types/ai').GenerateVideoIdeasResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const firstTitle = params.pastScripts[0]?.title || 'Content Creation';
+    return {
+      detectedNiche: 'Digital Creator & Growth Strategy',
+      creatorStyle: 'Fast-paced, actionable breakdowns with real creator workflows',
+      ideas: [
+        {
+          id: 'idea-1',
+          title: `Why 99% of Creators Fail at ${firstTitle.slice(0, 25)} (And How to Fix It)`,
+          hook: 'Most creators make one fatal mistake right in the first 30 seconds...',
+          angle: 'Contrarian breakdown addressing common pitfalls in your niche.',
+          format: 'Problem & Solution Breakdown'
+        },
+        {
+          id: 'idea-2',
+          title: 'The Unfair Advantage: 5 Tools I Use to Script Videos 10x Faster',
+          hook: 'If you are spending more than 2 hours writing a script, you are doing it wrong.',
+          angle: 'Actionable productivity tutorial with high retention potential.',
+          format: 'Listicle & Workflow'
+        },
+        {
+          id: 'idea-3',
+          title: 'How I Would Start Over from Scratch in 2026',
+          hook: 'If I lost all my scripts, subscribers, and tools tomorrow, here is my exact 30-day plan.',
+          angle: 'High-curiosity blueprint video that establishes authority.',
+          format: 'Step-by-Step Blueprint'
+        },
+        {
+          id: 'idea-4',
+          title: 'Stop Doing This In Your YouTube Scripts (It Kills Retention)',
+          hook: 'Look at this retention graph right here. Notice how it drops off at 1:15?',
+          angle: 'Data-driven critique that sparks urgency.',
+          format: 'Case Study & Analysis'
+        },
+        {
+          id: 'idea-5',
+          title: 'The 3-Hook Framework That Generated My Best Performing Video',
+          hook: 'The title gets the click, but these first 5 seconds make or break the entire video.',
+          angle: 'Deep-dive tactical framework.',
+          format: 'Behind-the-Scenes Framework'
+        },
+        {
+          id: 'idea-6',
+          title: 'The Secret Algorithm Shift Nobody Is Talking About Right Now',
+          hook: 'Something big changed in how videos get recommended this month.',
+          angle: 'Timely, urgent curiosity gap.',
+          format: 'Industry Insight'
+        }
+      ]
+    };
+  }
 }
