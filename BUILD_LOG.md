@@ -51,6 +51,14 @@
 - **🏷️ Script Status & Creator Analytics**: Production pipeline status tags (Draft, In Production, Filmed, Published) and Dashboard Analytics Widget measuring total words, total video production hours, published counts, and writing streaks.
 - **📱 PWA Manifest**: Added `public/manifest.json` for home screen installability on iPad, Mac, Windows, Android, and iOS.
 
+### Milestone 8: Startup Public Pages & Legal Suite
+- **📖 About Page (`/about`)**: Vision, mission, creator philosophy ("Less Noise, More Substance"), and platform pillars.
+- **💬 Contact Page (`/contact`)**: Message form, support email placeholder (`support@scriptflow.app`), and creator FAQs.
+- **🔒 Privacy Policy (`/privacy`)**: Enterprise data handling, zero AI training on creator scripts, TLS 1.3 encryption, and GDPR/CCPA user rights.
+- **⚖️ Terms of Service (`/terms`)**: 100% creator IP ownership, service terms, and AI disclaimer.
+- **📚 Creator Publication & Blog (`/blog`, `/blog/:slug`)**: 3 full tactical guides on 3-second hooks, 10-minute video retention architecture, and human-first AI workflow.
+- **🌐 Comprehensive Landing Page Footer**: Upgraded footer with Product, Resources, Company, and Legal link columns.
+
 ---
 
 ## 🛠️ Tech Stack & Key Files Reference
@@ -62,10 +70,11 @@
 | **Rich Text Editor** | `@tiptap/react`, `@tiptap/starter-kit` (`src/components/editor/ScriptEditor.tsx`) |
 | **Voice Mode Dictation** | Web Speech API + Gemini AI (`src/components/ai/VoiceScriptModal.tsx`) |
 | **Teleprompter Studio** | `requestAnimationFrame` WPM engine (`src/components/teleprompter/TeleprompterModal.tsx`) |
-| **Export/Import Engine** | PDF, MD, Word, TXT Exporters & Importer (`src/lib/exportImport.ts`, `ExportModal.tsx`, `ImportModal.tsx`) |
-| **Public Share Pages** | `/share/:token` public route (`src/components/share/ShareModal.tsx`, `SharedScriptPage.tsx`) |
-| **State Management** | Zustand (`src/stores/authStore.ts`, `scriptStore.ts`, `editorStore.ts`, `hookStore.ts`, `uiStore.ts`) |
-| **Authentication** | Supabase Auth, Google OAuth 2.0 (`src/services/supabase/auth.ts`, `src/pages/AuthCallbackPage.tsx`) |
+| **Public Pages** | About, Contact, Privacy, Terms, Blog (`src/pages/`) |
+| **Blog & Guides** | `src/data/blogPosts.ts`, `src/pages/BlogPage.tsx`, `src/pages/BlogPostPage.tsx` |
+| **Export/Import Engine** | PDF, MD, Word, TXT Exporters & Importer (`src/lib/exportImport.ts`) |
+| **State Management** | Zustand (`src/stores/`) |
+| **Authentication** | Supabase Auth, Google OAuth 2.0 (`src/services/supabase/auth.ts`) |
 | **Database & Cloud Storage** | Supabase Postgres, RLS (`supabase/schema.sql`, `src/services/supabase/storageService.ts`) |
 | **AI Provider** | Google Gemini API (`src/services/ai/geminiAiService.ts`) |
 | **GitHub Repo** | `https://github.com/jayant13042004/Script-Flow.git` |

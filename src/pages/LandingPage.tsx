@@ -92,7 +92,19 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-semibold tracking-tight">ScriptFlow</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/about"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block"
+            >
+              About
+            </Link>
+            <Link
+              to="/blog"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block"
+            >
+              Blog
+            </Link>
             {isAuthenticated ? (
               <button
                 onClick={() => navigate('/dashboard')}
@@ -269,17 +281,57 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-gray-200">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-              <PenLine className="w-3 h-3 text-gray-500" />
+      <footer className="bg-gray-50 border-t border-gray-200 py-16 px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+          {/* Brand Column */}
+          <div className="col-span-2 space-y-4">
+            <div className="flex items-center gap-2.5 text-gray-900 font-bold text-lg">
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <PenLine className="w-4 h-4 text-white" />
+              </div>
+              <span>ScriptFlow</span>
             </div>
-            <span>ScriptFlow</span>
+            <p className="text-xs text-gray-500 max-w-sm leading-relaxed">
+              The professional scriptwriting studio for YouTube creators, podcasters, and video storytellers. Write naturally, refine with AI, and produce faster.
+            </p>
+            <p className="text-xs text-gray-400">
+              © {new Date().getFullYear()} ScriptFlow Inc. All rights reserved.
+            </p>
           </div>
-          <p className="text-xs text-gray-400">
-            Built for content creators who care about their words.
-          </p>
+
+          {/* Product Links */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-4">Product</h4>
+            <ul className="space-y-2.5 text-xs text-gray-600">
+              <li><button onClick={handleCTA} className="hover:text-gray-900 text-left">Writing Studio</button></li>
+              <li><button onClick={handleCTA} className="hover:text-gray-900 text-left">Voice Mode Dictation</button></li>
+              <li><button onClick={handleCTA} className="hover:text-gray-900 text-left">Teleprompter Glass Mode</button></li>
+              <li><button onClick={handleCTA} className="hover:text-gray-900 text-left">Hook Library</button></li>
+              <li><button onClick={handleCTA} className="hover:text-gray-900 text-left">Script Analyzer</button></li>
+            </ul>
+          </div>
+
+          {/* Resources & Content */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-4">Resources</h4>
+            <ul className="space-y-2.5 text-xs text-gray-600">
+              <li><Link to="/blog" className="hover:text-gray-900">Creator Publication</Link></li>
+              <li><Link to="/blog/3-second-hook-formula-youtube-shorts" className="hover:text-gray-900">3-Second Hook Guide</Link></li>
+              <li><Link to="/blog/structure-10-minute-video-high-retention" className="hover:text-gray-900">Retention Frameworks</Link></li>
+              <li><Link to="/blog/ai-scriptwriting-without-losing-your-voice" className="hover:text-gray-900">Human-First AI</Link></li>
+            </ul>
+          </div>
+
+          {/* Company & Legal */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-4">Company & Legal</h4>
+            <ul className="space-y-2.5 text-xs text-gray-600">
+              <li><Link to="/about" className="hover:text-gray-900">About Us</Link></li>
+              <li><Link to="/contact" className="hover:text-gray-900">Contact & Support</Link></li>
+              <li><Link to="/privacy" className="hover:text-gray-900">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-gray-900">Terms of Service</Link></li>
+            </ul>
+          </div>
         </div>
       </footer>
     </div>
