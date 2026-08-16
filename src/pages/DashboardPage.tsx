@@ -100,12 +100,15 @@ export default function DashboardPage() {
   const [newFolderName, setNewFolderName] = useState('');
 
   useEffect(() => {
-    loadScripts();
-    loadFolders();
-  }, []);
+    if (user?.id) {
+      loadScripts(user.id);
+      loadFolders(user.id);
+    }
+  }, [user?.id]);
 
-  const handleNewScript = () => {
-    const script = createScript('Untitled Script', activeFolderId);
+  const handleNewScript = async () => {
+    if (!user?.id) return;
+    const script = await createScript(user.id, 'Untitled Script', activeFolderId);
     navigate(`/editor/${script.id}`);
   };
 
@@ -113,9 +116,9 @@ export default function DashboardPage() {
     navigate(`/editor/${scriptId}`);
   };
 
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      createFolder(newFolderName.trim());
+  const handleCreateFolder = async () => {
+    if (newFolderName.trim() && user?.id) {
+      await createFolder(user.id, newFolderName.trim());
       setNewFolderName('');
       setShowNewFolder(false);
     }
@@ -215,7 +218,7 @@ export default function DashboardPage() {
                     </span>
                   </button>
                   <button
-                    onClick={() => deleteFolder(folder.id)}
+                    onClick={async () => await deleteFolder(folder.id)}
                     className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                     title="Delete folder"
                   >
@@ -334,9 +337,10 @@ export default function DashboardPage() {
                     key={script.id}
                     script={script}
                     onOpen={() => handleOpenScript(script.id)}
-                    onDelete={() => deleteScript(script.id)}
-                    onDuplicate={() => {
-                      const dup = duplicateScript(script.id);
+                    onDelete={async () => await deleteScript(script.id)}
+                    onDuplicate={async () => {
+                      if (!user?.id) return;
+                      const dup = await duplicateScript(user.id, script.id);
                       if (dup) navigate(`/editor/${dup.id}`);
                     }}
                   />

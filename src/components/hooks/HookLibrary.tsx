@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lightbulb, Search, X, Plus } from 'lucide-react';
 import { useHookStore } from '../../stores/hookStore';
+import { useAuthStore } from '../../stores/authStore';
 import { HookCard } from './HookCard';
 import { Button, Input, Textarea, Select, Modal } from '../ui';
 import { HOOK_CATEGORIES } from '../../lib/constants';
@@ -15,7 +16,7 @@ interface HookLibraryProps {
 export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onInsert }) => {
   const {
     hooks,
-    favorites,
+    favoriteIds,
     searchQuery,
     activeCategory,
     loadHooks,
@@ -27,6 +28,8 @@ export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onIns
     filteredHooks
   } = useHookStore();
 
+  const { user } = useAuthStore();
+
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
@@ -36,8 +39,8 @@ export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onIns
   const [newHookCategory, setNewHookCategory] = useState<HookCategory>('curiosity');
 
   useEffect(() => {
-    loadHooks();
-  }, []);
+    if (user?.id) loadHooks(user.id);
+  }, [user?.id]);
 
   if (!isOpen) return null;
 
@@ -45,11 +48,16 @@ export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onIns
     navigator.clipboard.writeText(text);
   };
 
-  const handleAddCustomHook = (e: React.FormEvent) => {
+  const handleAddCustomHook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHookText.trim()) return;
+    if (!newHookText.trim() || !user?.id) return;
 
-    addCustomHook(newHookText.trim(), newHookCategory, newHookExample.trim());
+    await addCustomHook(user.id, {
+      text: newHookText.trim(),
+      category: newHookCategory,
+      example: newHookExample.trim(),
+      isCustom: true,
+    });
 
     setNewHookText('');
     setNewHookExample('');
@@ -57,8 +65,8 @@ export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onIns
   };
 
   const activeHooks = filteredHooks();
-  const displayHooks = showFavoritesOnly 
-    ? activeHooks.filter(h => favorites.includes(h.id))
+  const displayHooks = showFavoritesOnly
+    ? activeHooks.filter(h => (favoriteIds ?? []).includes(h.id))
     : activeHooks;
 
   return (
@@ -138,14 +146,14 @@ export const HookLibrary: React.FC<HookLibraryProps> = ({ isOpen, onClose, onIns
           </div>
         ) : (
           displayHooks.map(hook => (
-            <HookCard 
-              key={hook.id} 
-              hook={hook} 
-              isFavorite={favorites.includes(hook.id)}
-              onToggleFavorite={() => toggleFavorite(hook.id)}
+            <HookCard
+              key={hook.id}
+              hook={hook}
+              isFavorite={(favoriteIds ?? []).includes(hook.id)}
+              onToggleFavorite={() => user?.id && toggleFavorite(user.id, hook.id)}
               onCopy={() => handleCopy(hook.text)}
               onInsert={() => onInsert(hook.text)}
-              onDelete={() => deleteCustomHook(hook.id)}
+              onDelete={() => user?.id && deleteCustomHook(hook.id)}
             />
           ))
         )}

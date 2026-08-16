@@ -28,6 +28,7 @@ import { Modal } from '../components/ui/Modal';
 
 import { useEditorStore } from '../stores/editorStore';
 import { useScriptStore } from '../stores/scriptStore';
+import { useAuthStore } from '../stores/authStore';
 import { useAutosave } from '../hooks/useAutosave';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { formatDuration, formatRelativeTime } from '../lib/utils';
@@ -62,6 +63,8 @@ export default function EditorPage() {
     loadScript, updateScript, deleteScript, duplicateScript,
     createVersion, getVersions
   } = useScriptStore();
+
+  const { user } = useAuthStore();
 
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
@@ -114,23 +117,24 @@ export default function EditorPage() {
   useEffect(() => {
     if (id) {
       setScriptId(id);
-      const script = loadScript(id);
-      if (script) {
-        setTitle(script.title);
-        if (script.content && editor) {
-          editor.commands.setContent(script.content);
-          const html = editor.getHTML();
-          const text = editor.getText();
-          setContent(script.content, html, text);
+      loadScript(id).then((script) => {
+        if (script) {
+          setTitle(script.title);
+          if (script.content && editor) {
+            editor.commands.setContent(script.content);
+            const html = editor.getHTML();
+            const text = editor.getText();
+            setContent(script.content, html, text);
+          }
+          if (script.productionPlan) setProductionPlan(script.productionPlan);
+          if (script.structure) setStructure(script.structure);
+          setIsDirty(false);
+          setLastSaved(script.updatedAt);
+          setIsInitialized(true);
+        } else {
+          navigate('/dashboard');
         }
-        if (script.productionPlan) setProductionPlan(script.productionPlan);
-        if (script.structure) setStructure(script.structure);
-        setIsDirty(false);
-        setLastSaved(script.updatedAt);
-        setIsInitialized(true);
-      } else {
-        navigate('/dashboard');
-      }
+      });
     }
 
     return () => {
@@ -138,18 +142,19 @@ export default function EditorPage() {
     };
   }, [id]);
 
-  // Set content when editor becomes available after script loaded
+  // Set content when editor becomes available after script loaded async
   useEffect(() => {
     if (editor && id && !isInitialized) {
-      const script = loadScript(id);
-      if (script?.content) {
-        editor.commands.setContent(script.content);
-        const html = editor.getHTML();
-        const text = editor.getText();
-        setContent(script.content, html, text);
-        setIsDirty(false);
-        setIsInitialized(true);
-      }
+      loadScript(id).then((script) => {
+        if (script?.content) {
+          editor.commands.setContent(script.content);
+          const html = editor.getHTML();
+          const text = editor.getText();
+          setContent(script.content, html, text);
+          setIsDirty(false);
+          setIsInitialized(true);
+        }
+      });
     }
   }, [editor, id, isInitialized]);
 
@@ -232,14 +237,17 @@ export default function EditorPage() {
     setShowGenerateModal(false);
   }, [editor]);
 
-  // Version history
-  const versions = id ? getVersions(id) : [];
+  // Version history (loaded async)
+  const [versions, setVersions] = React.useState<any[]>([]);
+  useEffect(() => {
+    if (id) getVersions(id).then(setVersions);
+  }, [id]);
 
   // Duplicate
-  const handleDuplicate = () => {
-    if (!id) return;
+  const handleDuplicate = async () => {
+    if (!id || !user?.id) return;
     saveScript();
-    const dup = duplicateScript(id);
+    const dup = await duplicateScript(user.id, id);
     if (dup) navigate(`/editor/${dup.id}`);
   };
 

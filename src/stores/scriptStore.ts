@@ -1,8 +1,13 @@
 import { create } from 'zustand';
-import { Script, Folder, ScriptVersion } from '../types';
+import type { Script, Folder, ScriptVersion } from '../types';
+import { supabaseStorage } from '../services/supabase/storageService';
 import { LocalStorageService } from '../services/storage/localStorage';
+import { isSupabaseConfigured } from '../services/supabase/client';
 
-const storage = new LocalStorageService();
+const localStorage = new LocalStorageService();
+
+// Helper: pick the right backend
+const useSupabase = () => isSupabaseConfigured();
 
 interface ScriptState {
   scripts: Script[];
@@ -11,30 +16,30 @@ interface ScriptState {
   isLoading: boolean;
   searchQuery: string;
   activeFolderId: string | null;
-  
+
   // Scripts
-  loadScripts: () => void;
-  createScript: (title?: string, folderId?: string | null) => Script;
-  updateScript: (id: string, updates: Partial<Script>) => void;
-  deleteScript: (id: string) => void;
-  duplicateScript: (id: string) => Script;
+  loadScripts: (userId: string) => Promise<void>;
+  createScript: (userId: string, title?: string, folderId?: string | null) => Promise<Script>;
+  updateScript: (id: string, updates: Partial<Script>) => Promise<void>;
+  deleteScript: (id: string) => Promise<void>;
+  duplicateScript: (userId: string, id: string) => Promise<Script>;
   setCurrentScript: (script: Script | null) => void;
-  loadScript: (id: string) => Script | null;
-  
+  loadScript: (id: string) => Promise<Script | null>;
+
   // Folders
-  loadFolders: () => void;
-  createFolder: (name: string, color?: string) => void;
-  updateFolder: (id: string, updates: Partial<Folder>) => void;
-  deleteFolder: (id: string) => void;
+  loadFolders: (userId: string) => Promise<void>;
+  createFolder: (userId: string, name: string, color?: string) => Promise<void>;
+  updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
   setActiveFolderId: (id: string | null) => void;
-  
+
   // Search
   setSearchQuery: (query: string) => void;
-  
+
   // Versions
-  getVersions: (scriptId: string) => ScriptVersion[];
-  createVersion: (scriptId: string) => void;
-  
+  getVersions: (scriptId: string) => Promise<ScriptVersion[]>;
+  createVersion: (scriptId: string) => Promise<void>;
+
   // Computed
   filteredScripts: () => Script[];
 }
@@ -47,120 +52,172 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   searchQuery: '',
   activeFolderId: null,
 
-  loadScripts: () => {
+  // ── Scripts ─────────────────────────────────────────────────────────────────
+
+  loadScripts: async (userId) => {
     set({ isLoading: true });
     try {
-      const scripts = storage.getScripts();
+      const scripts = useSupabase()
+        ? await supabaseStorage.getScripts(userId)
+        : localStorage.getScripts();
       set({ scripts, isLoading: false });
     } catch (e) {
+      console.error('loadScripts error:', e);
       set({ isLoading: false });
     }
   },
 
-  createScript: (title: string = 'Untitled Script', folderId: string | null = null) => {
-    const script = storage.createScript({ title, folderId });
+  createScript: async (userId, title = 'Untitled Script', folderId = null) => {
+    const script = useSupabase()
+      ? await supabaseStorage.createScript(userId, { title, folderId })
+      : localStorage.createScript({ title, folderId, userId });
     set((state) => ({ scripts: [script, ...state.scripts] }));
     return script;
   },
 
-  updateScript: (id, updates) => {
-    const updatedScript = storage.updateScript(id, updates);
-    if (updatedScript) {
+  updateScript: async (id, updates) => {
+    const updated = useSupabase()
+      ? await supabaseStorage.updateScript(id, updates)
+      : localStorage.updateScript(id, updates);
+    if (updated) {
       set((state) => ({
-        scripts: state.scripts.map((s) => (s.id === id ? updatedScript : s)),
-        currentScript: state.currentScript?.id === id ? updatedScript : state.currentScript,
+        scripts: state.scripts.map((s) => (s.id === id ? updated : s)),
+        currentScript: state.currentScript?.id === id ? updated : state.currentScript,
       }));
     }
   },
 
-  deleteScript: (id) => {
-    storage.deleteScript(id);
+  deleteScript: async (id) => {
+    if (useSupabase()) {
+      await supabaseStorage.deleteScript(id);
+    } else {
+      localStorage.deleteScript(id);
+    }
     set((state) => ({
       scripts: state.scripts.filter((s) => s.id !== id),
       currentScript: state.currentScript?.id === id ? null : state.currentScript,
     }));
   },
 
-  duplicateScript: (id) => {
-    const scriptToDuplicate = storage.getScript(id);
-    if (!scriptToDuplicate) throw new Error('Script not found');
-    
-    const newScript = storage.createScript({
-      title: `${scriptToDuplicate.title} (Copy)`,
-      content: scriptToDuplicate.content,
-      plainText: scriptToDuplicate.plainText,
-      folderId: scriptToDuplicate.folderId,
-    });
-    
+  duplicateScript: async (userId, id) => {
+    const source = useSupabase()
+      ? await supabaseStorage.getScript(id)
+      : localStorage.getScript(id);
+    if (!source) throw new Error('Script not found');
+
+    const newScript = useSupabase()
+      ? await supabaseStorage.createScript(userId, {
+          title: `${source.title} (Copy)`,
+          content: source.content,
+          plainText: source.plainText,
+          folderId: source.folderId,
+          platform: source.platform,
+          contentType: source.contentType,
+          tone: source.tone,
+          language: source.language,
+        })
+      : localStorage.createScript({
+          title: `${source.title} (Copy)`,
+          content: source.content,
+          plainText: source.plainText,
+          folderId: source.folderId,
+          userId,
+        });
+
     set((state) => ({ scripts: [newScript, ...state.scripts] }));
     return newScript;
   },
 
-  setCurrentScript: (script) => {
-    set({ currentScript: script });
+  setCurrentScript: (script) => set({ currentScript: script }),
+
+  loadScript: async (id) => {
+    const script = useSupabase()
+      ? await supabaseStorage.getScript(id)
+      : localStorage.getScript(id);
+    if (script) set({ currentScript: script });
+    return script;
   },
 
-  loadScript: (id) => {
-    const script = storage.getScript(id);
-    if (script) {
-      set({ currentScript: script });
-      return script;
+  // ── Folders ─────────────────────────────────────────────────────────────────
+
+  loadFolders: async (userId) => {
+    try {
+      const folders = useSupabase()
+        ? await supabaseStorage.getFolders(userId)
+        : localStorage.getFolders();
+      set({ folders });
+    } catch (e) {
+      console.error('loadFolders error:', e);
     }
-    return null;
   },
 
-  loadFolders: () => {
-    const folders = storage.getFolders();
-    set({ folders });
-  },
-
-  createFolder: (name, color) => {
-    const folder = storage.createFolder(name, color);
+  createFolder: async (userId, name, color) => {
+    const folder = useSupabase()
+      ? await supabaseStorage.createFolder(userId, name, color)
+      : localStorage.createFolder(name, color);
     set((state) => ({ folders: [...state.folders, folder] }));
   },
 
-  updateFolder: (id, updates) => {
-    const updatedFolder = storage.updateFolder(id, updates);
-    if (updatedFolder) {
+  updateFolder: async (id, updates) => {
+    const updated = useSupabase()
+      ? await supabaseStorage.updateFolder(id, updates)
+      : localStorage.updateFolder(id, updates);
+    if (updated) {
       set((state) => ({
-        folders: state.folders.map((f) => (f.id === id ? updatedFolder : f)),
+        folders: state.folders.map((f) => (f.id === id ? updated : f)),
       }));
     }
   },
 
-  deleteFolder: (id) => {
-    storage.deleteFolder(id);
+  deleteFolder: async (id) => {
+    if (useSupabase()) {
+      await supabaseStorage.deleteFolder(id);
+    } else {
+      localStorage.deleteFolder(id);
+    }
     set((state) => ({
       folders: state.folders.filter((f) => f.id !== id),
       activeFolderId: state.activeFolderId === id ? null : state.activeFolderId,
     }));
   },
 
-  setActiveFolderId: (id) => {
-    set({ activeFolderId: id });
+  setActiveFolderId: (id) => set({ activeFolderId: id }),
+
+  // ── Search ──────────────────────────────────────────────────────────────────
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
+
+  // ── Versions ────────────────────────────────────────────────────────────────
+
+  getVersions: async (scriptId) => {
+    return useSupabase()
+      ? await supabaseStorage.getVersions(scriptId)
+      : localStorage.getVersions(scriptId);
   },
 
-  setSearchQuery: (query) => {
-    set({ searchQuery: query });
-  },
-
-  getVersions: (scriptId) => {
-    return storage.getVersions(scriptId);
-  },
-
-  createVersion: (scriptId) => {
-    const script = storage.getScript(scriptId);
-    if (script) {
-      storage.createVersion(scriptId, script.content, script.plainText, script.wordCount || 0);
+  createVersion: async (scriptId) => {
+    const script = useSupabase()
+      ? await supabaseStorage.getScript(scriptId)
+      : localStorage.getScript(scriptId);
+    if (!script) return;
+    if (useSupabase()) {
+      await supabaseStorage.createVersion(scriptId, script.content, script.plainText, script.wordCount ?? 0);
+    } else {
+      localStorage.createVersion(scriptId, script.content, script.plainText, script.wordCount ?? 0);
     }
   },
+
+  // ── Computed ────────────────────────────────────────────────────────────────
 
   filteredScripts: () => {
     const { scripts, activeFolderId, searchQuery } = get();
     return scripts.filter((script) => {
       const matchesFolder = activeFolderId ? script.folderId === activeFolderId : true;
-      const matchesSearch = script.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           (script.plainText && script.plainText.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        !q ||
+        script.title.toLowerCase().includes(q) ||
+        (script.plainText && script.plainText.toLowerCase().includes(q));
       return matchesFolder && matchesSearch;
     });
   },

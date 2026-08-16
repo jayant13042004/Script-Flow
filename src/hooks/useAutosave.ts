@@ -3,20 +3,20 @@ import { useScriptStore } from '../stores/scriptStore';
 import { useEditorStore } from '../stores/editorStore';
 
 export function useAutosave() {
-  const { currentScript, updateScript, createVersion } = useScriptStore();
-  const { 
-    scriptId, 
-    content, 
-    title, 
-    plainText, 
-    wordCount, 
-    characterCount, 
+  const { updateScript, createVersion } = useScriptStore();
+  const {
+    scriptId,
+    content,
+    title,
+    plainText,
+    wordCount,
+    characterCount,
     estimatedDuration,
     isDirty,
     setLastSaved,
-    setIsDirty
+    setIsDirty,
   } = useEditorStore();
-  
+
   const saveCountRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,25 +27,25 @@ export function useAutosave() {
       clearTimeout(timeoutRef.current);
     }
 
-    timeoutRef.current = setTimeout(() => {
-      // Perform save
-      updateScript(scriptId, {
+    timeoutRef.current = setTimeout(async () => {
+      // Perform async save to Supabase (or localStorage fallback)
+      await updateScript(scriptId, {
         title,
         content,
         plainText,
         wordCount,
         characterCount,
         estimatedDuration,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
-      
+
       setLastSaved(new Date().toISOString());
       setIsDirty(false);
-      
-      // Every 5th save, create a version
+
+      // Every 5th save, create a version snapshot
       saveCountRef.current += 1;
       if (saveCountRef.current % 5 === 0) {
-        createVersion(scriptId);
+        await createVersion(scriptId);
       }
     }, 3000);
 
@@ -55,17 +55,17 @@ export function useAutosave() {
       }
     };
   }, [
-    scriptId, 
-    content, 
-    title, 
-    plainText, 
-    wordCount, 
-    characterCount, 
-    estimatedDuration, 
-    isDirty, 
-    updateScript, 
-    setLastSaved, 
+    scriptId,
+    content,
+    title,
+    plainText,
+    wordCount,
+    characterCount,
+    estimatedDuration,
+    isDirty,
+    updateScript,
+    setLastSaved,
     setIsDirty,
-    createVersion
+    createVersion,
   ]);
 }
