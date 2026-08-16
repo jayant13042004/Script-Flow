@@ -31,8 +31,9 @@ import { ImportModal } from '../components/editor/ImportModal';
 import { ShareModal } from '../components/share/ShareModal';
 import { AudioRecorder } from '../components/audio/AudioRecorder';
 import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
+import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
-import { Mic, Tv, Share2, Upload, Volume2 } from 'lucide-react';
+import { Mic, Tv, Share2, Upload, Volume2, BarChart2 } from 'lucide-react';
 
 import { useEditorStore } from '../stores/editorStore';
 import { useScriptStore } from '../stores/scriptStore';
@@ -79,6 +80,7 @@ export default function EditorPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -295,19 +297,6 @@ export default function EditorPage() {
 
   return (
     <div className={editorContainerClasses}>
-      {/* Floating Zen Mode Exit Button when Fullscreen */}
-      {isFullscreen && (
-        <div className="fixed top-4 right-6 z-50 animate-fade-in">
-          <button
-            onClick={handleToggleFullscreen}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900/80 hover:bg-gray-900 text-white text-xs font-medium rounded-full shadow-lg backdrop-blur-md transition-all"
-          >
-            <Minimize2 className="w-3.5 h-3.5" />
-            <span>Exit Fullscreen (Esc)</span>
-          </button>
-        </div>
-      )}
-
       {/* Top Bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 no-print">
         <div className="px-4 h-14 flex items-center justify-between gap-4 relative z-20">
@@ -454,6 +443,12 @@ export default function EditorPage() {
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                     <div className="absolute right-0 top-10 z-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 animate-scale-in">
+                      <button
+                        onClick={() => { setShowAnalyticsModal(true); setShowMenu(false); }}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <BarChart2 className="w-3.5 h-3.5 text-blue-600" /> Script Analytics & Stats
+                      </button>
                       <button
                         onClick={() => { handleDuplicate(); setShowMenu(false); }}
                         className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -714,6 +709,26 @@ export default function EditorPage() {
               await updateScript(id, updates);
               setCurrentScriptObj((prev: any) => prev ? { ...prev, ...updates } : prev);
             }
+          }}
+        />
+      )}
+
+      {/* Script Analytics Modal */}
+      {currentScriptObj && (
+        <ScriptAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => setShowAnalyticsModal(false)}
+          script={{
+            ...currentScriptObj,
+            title,
+            plainText,
+            wordCount,
+            estimatedDuration: duration,
+            productionPlan,
+          }}
+          onExportPdf={() => {
+            setShowAnalyticsModal(false);
+            setShowExportModal(true);
           }}
         />
       )}

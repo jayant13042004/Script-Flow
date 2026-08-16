@@ -3,21 +3,23 @@ import { useNavigate, Link } from 'react-router';
 import {
   Plus, Search, FolderOpen, FileText, MoreHorizontal,
   Trash2, Copy, PenLine, Clock, Type, Timer,
-  FolderPlus, LogOut, ChevronRight, Archive, Edit3
+  FolderPlus, LogOut, ChevronRight, Archive, Edit3, BarChart2
 } from 'lucide-react';
 import { useScriptStore } from '../stores/scriptStore';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
 import { formatRelativeTime, formatDuration } from '../lib/utils';
-import { AnalyticsWidget } from '../components/dashboard/AnalyticsWidget';
 import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
+import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
+import { exportToPdf } from '../lib/exportImport';
 import type { Script, Folder, ScriptStatus } from '../types';
 
-function ScriptCard({ script, onOpen, onDelete, onDuplicate }: {
+function ScriptCard({ script, onOpen, onDelete, onDuplicate, onShowAnalytics }: {
   script: Script;
   onOpen: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  onShowAnalytics: () => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -33,32 +35,48 @@ function ScriptCard({ script, onOpen, onDelete, onDuplicate }: {
           </div>
           <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{script.title}</h3>
         </div>
-        <div className="relative">
+        <div className="flex items-center gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all"
+            onClick={(e) => { e.stopPropagation(); onShowAnalytics(); }}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all"
+            title="View Script Analytics"
           >
-            <MoreHorizontal className="w-4 h-4" />
+            <BarChart2 className="w-4 h-4" />
           </button>
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1 animate-scale-in">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDuplicate(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Copy className="w-3.5 h-3.5" /> Duplicate
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-            </>
-          )}
+
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1 animate-scale-in">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onShowAnalytics(); setShowMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <BarChart2 className="w-3.5 h-3.5 text-blue-600" /> Script Analytics
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDuplicate(); setShowMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Duplicate
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -103,6 +121,9 @@ export default function DashboardPage() {
 
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [selectedAnalyticsScript, setSelectedAnalyticsScript] = useState<Script | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -285,11 +306,6 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="flex-1 min-w-0">
-          {/* Creator Analytics & Habit Widget */}
-          <div className="mb-8">
-            <AnalyticsWidget scripts={scripts} />
-          </div>
-
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-xl font-bold text-gray-900">
@@ -347,6 +363,7 @@ export default function DashboardPage() {
                     key={script.id}
                     script={script}
                     onOpen={() => handleOpenScript(script.id)}
+                    onShowAnalytics={() => setSelectedAnalyticsScript(script)}
                     onDelete={async () => await deleteScript(script.id)}
                     onDuplicate={async () => {
                       if (!user?.id) return;
@@ -359,6 +376,20 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Individual Script Analytics Modal */}
+      <ScriptAnalyticsModal
+        isOpen={Boolean(selectedAnalyticsScript)}
+        onClose={() => setSelectedAnalyticsScript(null)}
+        script={selectedAnalyticsScript}
+        onOpenScript={(scriptId) => {
+          setSelectedAnalyticsScript(null);
+          navigate(`/editor/${scriptId}`);
+        }}
+        onExportPdf={(scriptToExport) => {
+          exportToPdf(scriptToExport);
+        }}
+      />
     </div>
   );
 }
