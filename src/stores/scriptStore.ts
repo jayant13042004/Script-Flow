@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Script, Folder, ScriptVersion } from '../types';
+import type { Script, Folder, ScriptVersion, Playlist } from '../types';
 import { supabaseStorage } from '../services/supabase/storageService';
 import { LocalStorageService } from '../services/storage/localStorage';
 import { isSupabaseConfigured } from '../services/supabase/client';
@@ -12,14 +12,16 @@ const useSupabase = () => isSupabaseConfigured();
 interface ScriptState {
   scripts: Script[];
   folders: Folder[];
+  playlists: Playlist[];
   currentScript: Script | null;
   isLoading: boolean;
   searchQuery: string;
   activeFolderId: string | null;
+  activePlaylistId: string | null;
 
   // Scripts
   loadScripts: (userId: string) => Promise<void>;
-  createScript: (userId: string, title?: string, folderId?: string | null) => Promise<Script>;
+  createScript: (userId: string, title?: string, folderId?: string | null, playlistId?: string | null) => Promise<Script>;
   updateScript: (id: string, updates: Partial<Script>) => Promise<void>;
   deleteScript: (id: string) => Promise<void>;
   duplicateScript: (userId: string, id: string) => Promise<Script>;
@@ -32,6 +34,13 @@ interface ScriptState {
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
   setActiveFolderId: (id: string | null) => void;
+
+  // Playlists / Series
+  loadPlaylists: (userId: string) => Promise<void>;
+  createPlaylist: (userId: string, name: string, description?: string, color?: string) => Promise<Playlist>;
+  updatePlaylist: (id: string, updates: Partial<Playlist>) => Promise<void>;
+  deletePlaylist: (id: string) => Promise<void>;
+  setActivePlaylistId: (id: string | null) => void;
 
   // Search
   setSearchQuery: (query: string) => void;
@@ -47,10 +56,12 @@ interface ScriptState {
 export const useScriptStore = create<ScriptState>((set, get) => ({
   scripts: [],
   folders: [],
+  playlists: [],
   currentScript: null,
   isLoading: false,
   searchQuery: '',
   activeFolderId: null,
+  activePlaylistId: null,
 
   // ── Scripts ─────────────────────────────────────────────────────────────────
 
@@ -67,24 +78,43 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     }
   },
 
-  createScript: async (userId, title = 'Untitled Script', folderId = null) => {
-    const script = useSupabase()
-      ? await supabaseStorage.createScript(userId, { title, folderId })
-      : localStorage.createScript({ title, folderId, userId });
-    set((state) => ({ scripts: [script, ...state.scripts] }));
-    return script;
+  createScript: async (userId, title = 'Untitled Script', folderId = null, playlistId = null) => {
+    let newScript: Script;
+    if (useSupabase()) {
+      newScript = await supabaseStorage.createScript(userId, {
+        title,
+        folderId,
+        playlistId,
+        content: null,
+        plainText: '',
+      });
+    } else {
+      newScript = localStorage.createScript({
+        title,
+        folderId,
+        playlistId,
+        content: null,
+        plainText: '',
+        userId,
+      });
+    }
+    set((state) => ({ scripts: [newScript, ...state.scripts] }));
+    return newScript;
   },
 
   updateScript: async (id, updates) => {
-    const updated = useSupabase()
-      ? await supabaseStorage.updateScript(id, updates)
-      : localStorage.updateScript(id, updates);
-    if (updated) {
-      set((state) => ({
-        scripts: state.scripts.map((s) => (s.id === id ? updated : s)),
-        currentScript: state.currentScript?.id === id ? updated : state.currentScript,
-      }));
+    if (useSupabase()) {
+      await supabaseStorage.updateScript(id, updates);
+    } else {
+      localStorage.updateScript(id, updates);
     }
+    set((state) => ({
+      scripts: state.scripts.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      currentScript:
+        state.currentScript?.id === id
+          ? { ...state.currentScript, ...updates }
+          : state.currentScript,
+    }));
   },
 
   deleteScript: async (id) => {
@@ -100,32 +130,25 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   },
 
   duplicateScript: async (userId, id) => {
-    const source = useSupabase()
+    const original = useSupabase()
       ? await supabaseStorage.getScript(id)
       : localStorage.getScript(id);
-    if (!source) throw new Error('Script not found');
-
-    const newScript = useSupabase()
-      ? await supabaseStorage.createScript(userId, {
-          title: `${source.title} (Copy)`,
-          content: source.content,
-          plainText: source.plainText,
-          folderId: source.folderId,
-          platform: source.platform,
-          contentType: source.contentType,
-          tone: source.tone,
-          language: source.language,
-        })
-      : localStorage.createScript({
-          title: `${source.title} (Copy)`,
-          content: source.content,
-          plainText: source.plainText,
-          folderId: source.folderId,
-          userId,
-        });
-
-    set((state) => ({ scripts: [newScript, ...state.scripts] }));
-    return newScript;
+    const title = original ? `${original.title} (Copy)` : 'Untitled Script (Copy)';
+    let dup: Script;
+    if (useSupabase()) {
+      dup = await supabaseStorage.createScript(userId, {
+        ...original,
+        title,
+      });
+    } else {
+      dup = localStorage.createScript({
+        ...original,
+        title,
+        userId,
+      });
+    }
+    set((state) => ({ scripts: [dup, ...state.scripts] }));
+    return dup;
   },
 
   setCurrentScript: (script) => set({ currentScript: script }),
@@ -134,7 +157,9 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     const script = useSupabase()
       ? await supabaseStorage.getScript(id)
       : localStorage.getScript(id);
-    if (script) set({ currentScript: script });
+    if (script) {
+      set({ currentScript: script });
+    }
     return script;
   },
 
@@ -152,19 +177,25 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   },
 
   createFolder: async (userId, name, color) => {
-    const folder = useSupabase()
-      ? await supabaseStorage.createFolder(userId, name, color)
-      : localStorage.createFolder(name, color);
+    let folder: Folder;
+    if (useSupabase()) {
+      folder = await supabaseStorage.createFolder(userId, name, color);
+    } else {
+      folder = localStorage.createFolder(name, color);
+    }
     set((state) => ({ folders: [...state.folders, folder] }));
   },
 
   updateFolder: async (id, updates) => {
-    const updated = useSupabase()
-      ? await supabaseStorage.updateFolder(id, updates)
-      : localStorage.updateFolder(id, updates);
+    let updated: Folder | null = null;
+    if (useSupabase()) {
+      updated = await supabaseStorage.updateFolder(id, updates);
+    } else {
+      updated = localStorage.updateFolder(id, updates);
+    }
     if (updated) {
       set((state) => ({
-        folders: state.folders.map((f) => (f.id === id ? updated : f)),
+        folders: state.folders.map((f) => (f.id === id ? updated! : f)),
       }));
     }
   },
@@ -181,7 +212,42 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
     }));
   },
 
-  setActiveFolderId: (id) => set({ activeFolderId: id }),
+  setActiveFolderId: (id) => set({ activeFolderId: id, activePlaylistId: null }),
+
+  // ── Playlists / Series ───────────────────────────────────────────────────────
+
+  loadPlaylists: async (userId) => {
+    try {
+      const playlists = localStorage.getPlaylists();
+      set({ playlists });
+    } catch (e) {
+      console.error('loadPlaylists error:', e);
+    }
+  },
+
+  createPlaylist: async (userId, name, description, color) => {
+    const playlist = localStorage.createPlaylist(name, description, color);
+    set((state) => ({ playlists: [...state.playlists, playlist] }));
+    return playlist;
+  },
+
+  updatePlaylist: async (id, updates) => {
+    const updated = localStorage.updatePlaylist(id, updates);
+    set((state) => ({
+      playlists: state.playlists.map((p) => (p.id === id ? updated : p)),
+    }));
+  },
+
+  deletePlaylist: async (id) => {
+    localStorage.deletePlaylist(id);
+    set((state) => ({
+      playlists: state.playlists.filter((p) => p.id !== id),
+      activePlaylistId: state.activePlaylistId === id ? null : state.activePlaylistId,
+      scripts: state.scripts.map((s) => s.playlistId === id ? { ...s, playlistId: null, episodeNumber: null } : s)
+    }));
+  },
+
+  setActivePlaylistId: (id) => set({ activePlaylistId: id, activeFolderId: null }),
 
   // ── Search ──────────────────────────────────────────────────────────────────
 
@@ -210,15 +276,16 @@ export const useScriptStore = create<ScriptState>((set, get) => ({
   // ── Computed ────────────────────────────────────────────────────────────────
 
   filteredScripts: () => {
-    const { scripts, activeFolderId, searchQuery } = get();
+    const { scripts, activeFolderId, activePlaylistId, searchQuery } = get();
     return scripts.filter((script) => {
       const matchesFolder = activeFolderId ? script.folderId === activeFolderId : true;
+      const matchesPlaylist = activePlaylistId ? script.playlistId === activePlaylistId : true;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !q ||
         script.title.toLowerCase().includes(q) ||
         (script.plainText && script.plainText.toLowerCase().includes(q));
-      return matchesFolder && matchesSearch;
+      return matchesFolder && matchesPlaylist && matchesSearch;
     });
   },
 }));

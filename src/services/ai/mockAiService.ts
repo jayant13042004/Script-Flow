@@ -190,4 +190,99 @@ export class MockAiService implements AiService {
       ]
     };
   }
+
+  async generateThumbnailConcepts(params: import('../../types/ai').GenerateThumbnailsParams): Promise<import('../../types/ai').GenerateThumbnailsResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return {
+      concepts: [
+        {
+          id: 'concept-1',
+          visualTitle: 'Extreme Shock / Curiosity Gap',
+          sceneDescription: 'Close-up face looking right at a blurred glowing laptop screen showing red downward graph and huge question mark.',
+          subjectEmotion: 'Shocked / wide eyes with hand on head',
+          colorContrast: 'Bright neon yellow text against dark charcoal backdrop',
+          textOverlay: 'DON\'T DO THIS!'
+        },
+        {
+          id: 'concept-2',
+          visualTitle: 'The Before vs. After Split Screen',
+          sceneDescription: 'Left half in desaturated gray showing frustrated creator, right half in vibrant emerald showing 10x growth chart.',
+          subjectEmotion: 'Frustrated on left vs Confident smiling on right',
+          colorContrast: 'Red alert border on left, bright green glow on right',
+          textOverlay: '10X FASTER'
+        },
+        {
+          id: 'concept-3',
+          visualTitle: 'The Hidden Blueprint / Secret File',
+          sceneDescription: 'Holding up a glowing folder marked "SECRET SCRIPT FRAMEWORK" with glowing arrows pointing directly at it.',
+          subjectEmotion: 'Knowing smirk looking directly into the camera',
+          colorContrast: 'Cyan blue backlight with orange key light',
+          textOverlay: 'THE TRUTH'
+        }
+      ]
+    };
+  }
+
+  async generateYoutubeMetadata(params: import('../../types/ai').GenerateYoutubeMetadataParams): Promise<import('../../types/ai').YoutubeMetadataResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return {
+      shortHookSummary: `In this video, I break down ${params.title} and reveal the exact framework top creators use to scale faster.`,
+      fullDescription: `🔥 In this video, we cover everything you need to know about ${params.title}.\n\nTimestamps & Chapters:\n0:00 - The Big Problem\n0:45 - Why Most People Get It Wrong\n2:15 - The 3-Step Framework\n5:30 - Real Creator Examples\n8:10 - Final Takeaways & Next Steps\n\n📌 Resources & Links:\n• ScriptFlow Studio: https://scriptflow.app\n• Join our creator community in the comments!\n\n#YouTubeGrowth #ContentCreation #VideoScripting`,
+      chapters: [
+        { timestamp: '0:00', title: 'The Big Problem' },
+        { timestamp: '0:45', title: 'Why Most People Get It Wrong' },
+        { timestamp: '2:15', title: 'The 3-Step Framework' },
+        { timestamp: '5:30', title: 'Real Creator Examples' },
+        { timestamp: '8:10', title: 'Final Takeaways' }
+      ],
+      tags: ['youtube scripts', 'content creator tips', 'video scripting', 'viral video ideas', 'scriptflow', 'youtube automation', 'storytelling framework'],
+      hashtags: ['#YouTubeGrowth', '#ContentCreation', '#VideoScripting', '#ScriptFlow']
+    };
+  }
+
+  async generateSponsorBlock(params: import('../../types/ai').SponsorBlockParams): Promise<import('../../types/ai').SponsorBlockResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const intro = `Now, before we jump into the next step, staying organized as a creator is everything — and that brings us to today's sponsor: ${params.brandName}.`;
+    const body = `${params.brandName} is built specifically to help creators ${params.talkingPoints || 'streamline their entire workflow'}. Use my link ${params.sponsorUrl || 'in the description'} or code "${params.promoCode || 'CREATOR'}" to get an exclusive 20% discount on your first month.`;
+    const outro = `Big thank you to ${params.brandName} for supporting the channel. Now, back to our script.`;
+    return {
+      introTransition: intro,
+      sponsorRead: body,
+      outroTransition: outro,
+      fullSponsorBlock: `${intro}\n\n${body}\n\n${outro}`
+    };
+  }
+
+  async translateScript(params: import('../../types/ai').TranslateScriptParams): Promise<import('../../types/ai').TranslateScriptResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return {
+      translatedText: `[Translated into ${params.targetLanguage}]:\n\n${params.scriptText}`,
+      targetLanguage: params.targetLanguage,
+      pronunciationNotes: 'Natural conversational pace recommended for international voiceover dubbing.'
+    };
+  }
+
+  async extractViralShorts(params: import('../../types/ai').ExtractShortsParams): Promise<import('../../types/ai').ExtractShortsResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return {
+      shorts: [
+        {
+          id: 'short-1',
+          title: `The 1 Mistake In ${params.longScriptTitle.slice(0, 20)}`,
+          hook: 'If you do this one thing in your videos, viewers click off immediately.',
+          scriptText: 'Here is the brutal truth: 90% of people make their intro way too slow.\n\nInstead of saying "hey guys welcome back", start right in the action with the core problem.\n\nCut the fluff, show the stakes, and watch your average view duration double.',
+          visualCues: 'Fast zoom in on face, overlay big red X, show retention graph spike',
+          estimatedDuration: 45
+        },
+        {
+          id: 'short-2',
+          title: 'The 3-Second Rule Every Creator Needs',
+          hook: 'You have exactly 3 seconds before someone swipes away on your Short.',
+          scriptText: 'The secret is visual pattern interrupts. Every 3 seconds, change the camera angle, pop on-screen text, or add a sound effect.\n\nTry this in your next video and check your retention.',
+          visualCues: 'Snap fingers, quick b-roll cut, text pop-in animation',
+          estimatedDuration: 40
+        }
+      ]
+    };
+  }
 }

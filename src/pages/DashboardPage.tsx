@@ -4,7 +4,7 @@ import {
   Plus, Search, FolderOpen, FileText, MoreHorizontal,
   Trash2, Copy, PenLine, Clock, Type, Timer,
   FolderPlus, LogOut, ChevronRight, Archive, Edit3, BarChart2,
-  Lightbulb, Sparkles
+  Lightbulb, Sparkles, Layers, ListPlus
 } from 'lucide-react';
 import { useScriptStore } from '../stores/scriptStore';
 import { useAuthStore } from '../stores/authStore';
@@ -13,8 +13,9 @@ import { formatRelativeTime, formatDuration } from '../lib/utils';
 import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
 import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
 import { VideoIdeasModal } from '../components/ai/VideoIdeasModal';
+import { PlaylistModal } from '../components/playlist/PlaylistModal';
 import { exportToPdf } from '../lib/exportImport';
-import type { Script, Folder, ScriptStatus } from '../types';
+import type { Script, Folder, ScriptStatus, Playlist } from '../types';
 
 function ScriptCard({ script, onOpen, onDelete, onDuplicate, onShowAnalytics }: {
   script: Script;
@@ -115,10 +116,10 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const {
-    scripts, folders, searchQuery, activeFolderId,
-    loadScripts, loadFolders, createScript, updateScript, deleteScript,
-    duplicateScript, setSearchQuery, setActiveFolderId,
-    createFolder, deleteFolder, filteredScripts
+    scripts, folders, playlists, searchQuery, activeFolderId, activePlaylistId,
+    loadScripts, loadFolders, loadPlaylists, createScript, updateScript, deleteScript,
+    duplicateScript, setSearchQuery, setActiveFolderId, setActivePlaylistId,
+    createFolder, deleteFolder, createPlaylist, deletePlaylist, filteredScripts
   } = useScriptStore();
 
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -127,11 +128,13 @@ export default function DashboardPage() {
   const [editingFolderName, setEditingFolderName] = useState('');
   const [selectedAnalyticsScript, setSelectedAnalyticsScript] = useState<Script | null>(null);
   const [showIdeasModal, setShowIdeasModal] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
       loadScripts(user.id);
       loadFolders(user.id);
+      loadPlaylists(user.id);
     }
   }, [user?.id]);
 
@@ -308,6 +311,53 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Sidebar - Video Series & Playlists */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-500" /> Series / Courses
+                </h2>
+                <button
+                  onClick={() => setShowPlaylistModal(true)}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  title="Manage Playlists"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <nav className="space-y-0.5">
+                {playlists.map((pl) => (
+                  <button
+                    key={pl.id}
+                    onClick={() => setActivePlaylistId(pl.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+                      activePlaylistId === pl.id
+                        ? 'bg-indigo-50 text-indigo-900 font-semibold border border-indigo-200'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: pl.color || '#6366f1' }}
+                    />
+                    <span className="truncate">{pl.name}</span>
+                    <span className="ml-auto text-xs text-gray-400">
+                      {scripts.filter(s => s.playlistId === pl.id).length}
+                    </span>
+                  </button>
+                ))}
+                {playlists.length === 0 && (
+                  <button
+                    onClick={() => setShowPlaylistModal(true)}
+                    className="w-full text-left px-3 py-2 text-xs text-indigo-600 hover:bg-indigo-50/50 rounded-lg transition-colors flex items-center gap-1.5 font-medium"
+                  >
+                    <ListPlus className="w-3.5 h-3.5" /> + New Series Playlist
+                  </button>
+                )}
+              </nav>
+            </div>
+
             {user && (
               <div className="mt-8 pt-4 border-t border-gray-200">
                 <div className="px-3 flex items-center gap-3">
@@ -428,6 +478,19 @@ export default function DashboardPage() {
         onClose={() => setShowIdeasModal(false)}
         pastScripts={scripts}
         onSelectIdea={handleSelectIdea}
+      />
+
+      {/* Video Series & Playlists Modal */}
+      <PlaylistModal
+        isOpen={showPlaylistModal}
+        onClose={() => setShowPlaylistModal(false)}
+        playlists={playlists}
+        onCreatePlaylist={async (name, desc, color) => {
+          if (user?.id) await createPlaylist(user.id, name, desc, color);
+        }}
+        onDeletePlaylist={async (id) => {
+          await deletePlaylist(id);
+        }}
       />
     </div>
   );

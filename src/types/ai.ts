@@ -7,8 +7,96 @@ export interface AiService {
   askAboutScript(params: AskParams): Promise<AiTextResponse>;
   generateVideoIdeas?(params: GenerateVideoIdeasParams): Promise<GenerateVideoIdeasResponse>;
   transcribeAudio?(params: TranscribeAudioParams): Promise<TranscribeAudioResponse>;
+  generateThumbnailConcepts?(params: GenerateThumbnailsParams): Promise<GenerateThumbnailsResponse>;
+  generateYoutubeMetadata?(params: GenerateYoutubeMetadataParams): Promise<YoutubeMetadataResponse>;
+  generateSponsorBlock?(params: SponsorBlockParams): Promise<SponsorBlockResponse>;
+  translateScript?(params: TranslateScriptParams): Promise<TranslateScriptResponse>;
+  extractViralShorts?(params: ExtractShortsParams): Promise<ExtractShortsResponse>;
 }
 
+// 1. Thumbnail Concepts
+export interface ThumbnailConcept {
+  id: string;
+  sceneDescription: string;
+  subjectEmotion: string;
+  colorContrast: string;
+  textOverlay: string;
+  visualTitle: string;
+}
+
+export interface GenerateThumbnailsParams {
+  title: string;
+  scriptContext: string;
+}
+
+export interface GenerateThumbnailsResponse {
+  concepts: ThumbnailConcept[];
+}
+
+// 2. YouTube Metadata & Chapters
+export interface YoutubeMetadataResponse {
+  shortHookSummary: string;
+  fullDescription: string;
+  chapters: { timestamp: string; title: string }[];
+  tags: string[];
+  hashtags: string[];
+}
+
+export interface GenerateYoutubeMetadataParams {
+  title: string;
+  scriptContext: string;
+}
+
+// 3. Sponsor Segment
+export interface SponsorBlockParams {
+  brandName: string;
+  sponsorUrl?: string;
+  promoCode?: string;
+  talkingPoints: string;
+  placement: 'organic-bridge' | 'mid-roll' | 'problem-solution';
+  currentScriptContext: string;
+}
+
+export interface SponsorBlockResponse {
+  introTransition: string;
+  sponsorRead: string;
+  outroTransition: string;
+  fullSponsorBlock: string;
+}
+
+// 4. Script Translation
+export interface TranslateScriptParams {
+  scriptText: string;
+  targetLanguage: string;
+  languageCode: string;
+}
+
+export interface TranslateScriptResponse {
+  translatedText: string;
+  targetLanguage: string;
+  pronunciationNotes?: string;
+}
+
+// 5. Short / Reel Extraction
+export interface ViralShortOption {
+  id: string;
+  title: string;
+  hook: string;
+  scriptText: string;
+  visualCues: string;
+  estimatedDuration: number;
+}
+
+export interface ExtractShortsParams {
+  longScriptTitle: string;
+  longScriptText: string;
+}
+
+export interface ExtractShortsResponse {
+  shorts: ViralShortOption[];
+}
+
+// Existing Types
 export interface VideoIdea {
   id: string;
   title: string;

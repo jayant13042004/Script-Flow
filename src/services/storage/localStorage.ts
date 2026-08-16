@@ -1,4 +1,4 @@
-import type { Script, Folder, ScriptVersion, Hook } from '../../types';
+import type { Script, Folder, ScriptVersion, Hook, Playlist } from '../../types';
 
 export interface StorageService {
   // Scripts
@@ -13,6 +13,12 @@ export interface StorageService {
   createFolder(name: string, color?: string): Folder;
   updateFolder(id: string, updates: Partial<Folder>): Folder;
   deleteFolder(id: string): void;
+
+  // Playlists / Series
+  getPlaylists(): Playlist[];
+  createPlaylist(name: string, description?: string, color?: string): Playlist;
+  updatePlaylist(id: string, updates: Partial<Playlist>): Playlist;
+  deletePlaylist(id: string): void;
   
   // Versions
   getVersions(scriptId: string): ScriptVersion[];
@@ -164,6 +170,54 @@ export class LocalStorageService implements StorageService {
     const scripts = this.getScripts();
     const updatedScripts = scripts.map(s => 
       s.folderId === id ? { ...s, folderId: null } : s
+    );
+    this.set('scriptflow_scripts', updatedScripts);
+  }
+
+  // Playlists / Series
+  getPlaylists(): import('../../types').Playlist[] {
+    return this.get<import('../../types').Playlist[]>('scriptflow_playlists', []);
+  }
+
+  createPlaylist(name: string, description?: string, color?: string): import('../../types').Playlist {
+    const playlists = this.getPlaylists();
+    const newPlaylist: import('../../types').Playlist = {
+      id: this.generateId(),
+      userId: 'local-user',
+      name,
+      description: description || '',
+      color: color || '#3b82f6',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    this.set('scriptflow_playlists', [...playlists, newPlaylist]);
+    return newPlaylist;
+  }
+
+  updatePlaylist(id: string, updates: Partial<import('../../types').Playlist>): import('../../types').Playlist {
+    const playlists = this.getPlaylists();
+    const playlist = playlists.find(p => p.id === id);
+    if (!playlist) throw new Error('Playlist not found');
+    
+    const updated = {
+      ...playlist,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    this.set('scriptflow_playlists', playlists.map(p => p.id === id ? updated : p));
+    return updated;
+  }
+
+  deletePlaylist(id: string): void {
+    const playlists = this.getPlaylists();
+    this.set('scriptflow_playlists', playlists.filter(p => p.id !== id));
+
+    // Clear playlistId on scripts belonging to this playlist
+    const scripts = this.getScripts();
+    const updatedScripts = scripts.map(s => 
+      s.playlistId === id ? { ...s, playlistId: null, episodeNumber: null } : s
     );
     this.set('scriptflow_scripts', updatedScripts);
   }

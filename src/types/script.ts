@@ -4,6 +4,8 @@ export interface Script {
   id: string;
   userId: string;
   folderId: string | null;
+  playlistId?: string | null;
+  episodeNumber?: number | null;
   title: string;
   content: any; // TipTap JSON document
   plainText: string;
@@ -21,6 +23,16 @@ export interface Script {
   isPublic: boolean;
   shareToken: string | null;
   audioRecordings?: AudioRecording[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Playlist {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  color?: string | null;
   createdAt: string;
   updatedAt: string;
 }

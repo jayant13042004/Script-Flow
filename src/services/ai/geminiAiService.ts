@@ -365,4 +365,211 @@ Output ONLY valid JSON matching this schema:
       ideas: []
     };
   }
+
+  // 1. Thumbnail Concepts
+  async generateThumbnailConcepts(params: import('../../types/ai').GenerateThumbnailsParams): Promise<import('../../types/ai').GenerateThumbnailsResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.generateThumbnailConcepts ? this.fallbackService.generateThumbnailConcepts(params) : { concepts: [] };
+    }
+
+    const prompt = `You are a YouTube thumbnail artist and viral packaging designer.
+Analyze the video title and script context below.
+Create 3 high-contrast, click-worthy thumbnail concepts.
+
+Video Title: "${params.title}"
+Script Context:
+${params.scriptContext.slice(0, 1500)}
+
+Output ONLY valid JSON matching this schema:
+{
+  "concepts": [
+    {
+      "id": "concept-1",
+      "visualTitle": "Short catchy angle for this visual",
+      "sceneDescription": "Exact visual scene layout, characters, foreground and background elements",
+      "subjectEmotion": "Facial expression and eye direction (e.g. shock looking right, intense focus)",
+      "colorContrast": "High-contrast color scheme (e.g. Neon yellow foreground on dark navy background)",
+      "textOverlay": "2 to 4 words MAX bold text to place on the thumbnail (do not repeat the title)"
+    }
+  ]
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').GenerateThumbnailsResponse>(jsonText);
+      if (parsed?.concepts && parsed.concepts.length > 0) return parsed;
+    }
+
+    return this.fallbackService.generateThumbnailConcepts ? this.fallbackService.generateThumbnailConcepts(params) : { concepts: [] };
+  }
+
+  // 2. YouTube Metadata & Chapters
+  async generateYoutubeMetadata(params: import('../../types/ai').GenerateYoutubeMetadataParams): Promise<import('../../types/ai').YoutubeMetadataResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.generateYoutubeMetadata ? this.fallbackService.generateYoutubeMetadata(params) : {
+        shortHookSummary: '',
+        fullDescription: '',
+        chapters: [],
+        tags: [],
+        hashtags: []
+      };
+    }
+
+    const prompt = `You are a YouTube SEO expert.
+Generate complete YouTube Studio video metadata for the script below:
+1. A compelling 2-sentence hook description above the fold.
+2. An engaging full video description.
+3. Realistic timestamps/chapters starting at 0:00.
+4. 15-20 comma-separated SEO keywords/tags.
+5. 3-5 trending hashtags.
+
+Video Title: "${params.title}"
+Script Content:
+${params.scriptContext.slice(0, 3000)}
+
+Output ONLY valid JSON matching this schema:
+{
+  "shortHookSummary": "First 2 lines above the fold for maximum CTR",
+  "fullDescription": "Full formatted YouTube description with emojis, summary, and links placeholders",
+  "chapters": [
+    { "timestamp": "0:00", "title": "Intro Hook" },
+    { "timestamp": "0:45", "title": "The Problem" }
+  ],
+  "tags": ["tag1", "tag2", "tag3"],
+  "hashtags": ["#tag1", "#tag2", "#tag3"]
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').YoutubeMetadataResponse>(jsonText);
+      if (parsed?.tags) return parsed;
+    }
+
+    return this.fallbackService.generateYoutubeMetadata ? this.fallbackService.generateYoutubeMetadata(params) : {
+      shortHookSummary: '',
+      fullDescription: '',
+      chapters: [],
+      tags: [],
+      hashtags: []
+    };
+  }
+
+  // 3. Sponsor Segment
+  async generateSponsorBlock(params: import('../../types/ai').SponsorBlockParams): Promise<import('../../types/ai').SponsorBlockResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.generateSponsorBlock ? this.fallbackService.generateSponsorBlock(params) : {
+        introTransition: '',
+        sponsorRead: '',
+        outroTransition: '',
+        fullSponsorBlock: ''
+      };
+    }
+
+    const prompt = `You are an elite video scriptwriter.
+Write an authentic, seamless 45-60s sponsorship read for a YouTube video.
+The transition from the creator's content into the sponsor MUST be organic and natural (not jarring or awkward).
+
+Brand: ${params.brandName}
+Promo Link / Code: ${params.sponsorUrl || params.promoCode || 'link in description'}
+Talking Points: ${params.talkingPoints}
+Placement Style: ${params.placement}
+Current Script Context:
+${params.currentScriptContext.slice(0, 1500)}
+
+Output ONLY valid JSON matching this schema:
+{
+  "introTransition": "Smooth bridge from content to brand",
+  "sponsorRead": "Engaging 45-60s spoken ad delivery covering key benefits & promo code",
+  "outroTransition": "Smooth return back into the main video content",
+  "fullSponsorBlock": "Full combined text ready to speak"
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').SponsorBlockResponse>(jsonText);
+      if (parsed?.fullSponsorBlock) return parsed;
+    }
+
+    return this.fallbackService.generateSponsorBlock ? this.fallbackService.generateSponsorBlock(params) : {
+      introTransition: '',
+      sponsorRead: '',
+      outroTransition: '',
+      fullSponsorBlock: ''
+    };
+  }
+
+  // 4. Multi-Language Script Translation
+  async translateScript(params: import('../../types/ai').TranslateScriptParams): Promise<import('../../types/ai').TranslateScriptResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.translateScript ? this.fallbackService.translateScript(params) : {
+        translatedText: params.scriptText,
+        targetLanguage: params.targetLanguage
+      };
+    }
+
+    const prompt = `You are a professional multilingual voiceover and dubbing translator.
+Translate the following video script into natural, spoken ${params.targetLanguage}.
+Ensure phrasing and sentence rhythm sound natural when read aloud for voiceover and dubbing.
+
+Script to translate:
+${params.scriptText}
+
+Output ONLY valid JSON matching this schema:
+{
+  "translatedText": "Full translated spoken script",
+  "targetLanguage": "${params.targetLanguage}",
+  "pronunciationNotes": "Optional brief delivery or cultural adaptation notes"
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').TranslateScriptResponse>(jsonText);
+      if (parsed?.translatedText) return parsed;
+    }
+
+    return this.fallbackService.translateScript ? this.fallbackService.translateScript(params) : {
+      translatedText: params.scriptText,
+      targetLanguage: params.targetLanguage
+    };
+  }
+
+  // 5. 1-Click Viral Short Extraction
+  async extractViralShorts(params: import('../../types/ai').ExtractShortsParams): Promise<import('../../types/ai').ExtractShortsResponse> {
+    if (!this.apiKey) {
+      return this.fallbackService.extractViralShorts ? this.fallbackService.extractViralShorts(params) : { shorts: [] };
+    }
+
+    const prompt = `You are a viral YouTube Shorts and TikTok growth strategist.
+Analyze the long-form script below and extract the top 2-3 most viral, high-retention 45-60 second standalone Shorts / Reels.
+Each short MUST have:
+1. High-curiosity opening Hook.
+2. Fast, punchy storytelling (120-150 words).
+3. Visual / B-Roll cues for vertical video.
+
+Long Script Title: "${params.longScriptTitle}"
+Long Script Content:
+${params.longScriptText.slice(0, 3500)}
+
+Output ONLY valid JSON matching this schema:
+{
+  "shorts": [
+    {
+      "id": "short-1",
+      "title": "Viral Short Title",
+      "hook": "5-second vertical hook",
+      "scriptText": "Complete 45-60s spoken script text",
+      "visualCues": "Fast cuts, zoom in, text on screen tips",
+      "estimatedDuration": 50
+    }
+  ]
+}`;
+
+    const jsonText = await this.callGemini(prompt, true);
+    if (jsonText) {
+      const parsed = safeParseJSON<import('../../types/ai').ExtractShortsResponse>(jsonText);
+      if (parsed?.shorts && parsed.shorts.length > 0) return parsed;
+    }
+
+    return this.fallbackService.extractViralShorts ? this.fallbackService.extractViralShorts(params) : { shorts: [] };
+  }
 }

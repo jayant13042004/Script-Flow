@@ -33,8 +33,14 @@ import { AudioRecorder } from '../components/audio/AudioRecorder';
 import { ScriptStatusBadge, ScriptStatus } from '../components/dashboard/ScriptStatusBadge';
 import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
 import { VideoIdeasModal } from '../components/ai/VideoIdeasModal';
+import { ThumbnailModal } from '../components/studio/ThumbnailModal';
+import { YoutubeMetadataModal } from '../components/studio/YoutubeMetadataModal';
+import { SponsorBlockModal } from '../components/studio/SponsorBlockModal';
+import { ScriptTranslatorModal } from '../components/studio/ScriptTranslatorModal';
+import { ShortExtractorModal } from '../components/studio/ShortExtractorModal';
+import { StudioToolsDropdown } from '../components/studio/StudioToolsDropdown';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
-import { Mic, Tv, Share2, Upload, Volume2, BarChart2 } from 'lucide-react';
+import { Mic, Tv, Share2, Upload, Volume2, BarChart2, Layers } from 'lucide-react';
 
 import { useEditorStore } from '../stores/editorStore';
 import { useScriptStore } from '../stores/scriptStore';
@@ -69,7 +75,7 @@ export default function EditorPage() {
   } = useEditorStore();
 
   const {
-    scripts, loadScripts, loadScript, updateScript, deleteScript, duplicateScript,
+    scripts, loadScripts, loadScript, createScript, updateScript, deleteScript, duplicateScript,
     createVersion, getVersions
   } = useScriptStore();
 
@@ -83,6 +89,11 @@ export default function EditorPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showIdeasModal, setShowIdeasModal] = useState(false);
+  const [showThumbnailModal, setShowThumbnailModal] = useState(false);
+  const [showYoutubeModal, setShowYoutubeModal] = useState(false);
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [showTranslatorModal, setShowTranslatorModal] = useState(false);
+  const [showShortExtractorModal, setShowShortExtractorModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -340,6 +351,17 @@ export default function EditorPage() {
 
           {/* Right */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Series / Playlist indicator */}
+            {currentScriptObj?.playlistId && (
+              <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg shrink-0">
+                <Layers className="w-3.5 h-3.5" />
+                <span>
+                  {useScriptStore.getState().playlists.find(p => p.id === currentScriptObj.playlistId)?.name || 'Series'}
+                  {currentScriptObj.episodeNumber ? ` • Ep ${currentScriptObj.episodeNumber}` : ''}
+                </span>
+              </span>
+            )}
+
             {/* Status Dropdown */}
             {currentScriptObj && (
               <ScriptStatusBadge
@@ -361,16 +383,6 @@ export default function EditorPage() {
             >
               <Mic className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
               <span className="hidden sm:inline">Voice Mode</span>
-            </button>
-
-            {/* Teleprompter Button */}
-            <button
-              onClick={() => setShowTeleprompter(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
-              title="Teleprompter Mode"
-            >
-              <Tv className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Teleprompter</span>
             </button>
 
             {/* AI Niche Ideas Button (when creator has 5+ past scripts) */}
@@ -395,46 +407,24 @@ export default function EditorPage() {
               <span className="hidden sm:inline">AI Generate</span>
             </button>
 
-            {/* Audio Voice Recorder */}
-            <button
-              onClick={() => setShowAudioRecorder(!showAudioRecorder)}
-              className={`p-2 rounded-lg transition-colors ${
-                showAudioRecorder ? 'bg-amber-100 text-amber-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Audio Voice Recorder"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-
-            {/* Share Button */}
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Share Public Link"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-
-            {/* Export Button */}
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Export Script (PDF, MD, Word, TXT)"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            {/* Import Button */}
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Import Script File"
-            >
-              <Upload className="w-4 h-4" />
-            </button>
+            {/* Consolidated Studio Tools Dropdown */}
+            <StudioToolsDropdown
+              onOpenTeleprompter={() => setShowTeleprompter(true)}
+              onToggleAudioRecorder={() => setShowAudioRecorder(!showAudioRecorder)}
+              onOpenThumbnails={() => setShowThumbnailModal(true)}
+              onOpenYoutubeMetadata={() => setShowYoutubeModal(true)}
+              onOpenSponsorBlock={() => setShowSponsorModal(true)}
+              onOpenTranslator={() => setShowTranslatorModal(true)}
+              onOpenShortExtractor={() => setShowShortExtractorModal(true)}
+              onOpenShareModal={() => setShowShareModal(true)}
+              onOpenAnalytics={() => setShowAnalyticsModal(true)}
+              onOpenExport={() => setShowExportModal(true)}
+              onOpenImport={() => setShowImportModal(true)}
+              isAudioRecordingActive={showAudioRecorder}
+            />
 
             {/* Panel toggles */}
-            <div className="flex items-center border-l border-gray-200 ml-2 pl-2 gap-0.5">
+            <div className="flex items-center border-l border-gray-200 ml-1.5 pl-1.5 gap-0.5">
               {panelButtons.map((btn) => (
                 <button
                   key={btn.id}
@@ -776,6 +766,65 @@ export default function EditorPage() {
           }
           setIsDirty(true);
           setShowIdeasModal(false);
+        }}
+      />
+
+      {/* 1. Thumbnail Concepts Modal */}
+      <ThumbnailModal
+        isOpen={showThumbnailModal}
+        onClose={() => setShowThumbnailModal(false)}
+        title={title}
+        scriptContext={plainText || editor?.getText() || ''}
+      />
+
+      {/* 2. YouTube Metadata & Chapters Modal */}
+      <YoutubeMetadataModal
+        isOpen={showYoutubeModal}
+        onClose={() => setShowYoutubeModal(false)}
+        title={title}
+        scriptContext={plainText || editor?.getText() || ''}
+      />
+
+      {/* 3. Sponsor Segment Builder Modal */}
+      <SponsorBlockModal
+        isOpen={showSponsorModal}
+        onClose={() => setShowSponsorModal(false)}
+        currentScriptContext={plainText || editor?.getText() || ''}
+        onInsert={(sponsorText) => {
+          if (editor) {
+            editor.commands.insertContent(sponsorText);
+            setIsDirty(true);
+          }
+        }}
+      />
+
+      {/* 4. Multi-Language Audio Dubbing & Subtitle Translator Modal */}
+      <ScriptTranslatorModal
+        isOpen={showTranslatorModal}
+        onClose={() => setShowTranslatorModal(false)}
+        title={title}
+        scriptText={plainText || editor?.getText() || ''}
+      />
+
+      {/* 5. 1-Click Short & Reel Extractor Modal */}
+      <ShortExtractorModal
+        isOpen={showShortExtractorModal}
+        onClose={() => setShowShortExtractorModal(false)}
+        title={title}
+        scriptText={plainText || editor?.getText() || ''}
+        onCreateShortScript={async (short) => {
+          if (!user?.id) return;
+          setShowShortExtractorModal(false);
+          const newScript = await createScript(user.id, short.title, currentScriptObj?.folderId);
+          if (newScript) {
+            const contentHtml = `<p><strong>[Hook]:</strong><br>${short.hook}</p><p>${short.scriptText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p><p><strong>[Visual Cues]:</strong><br>${short.visualCues || ''}</p>`;
+            await updateScript(newScript.id, {
+              platform: 'youtube-shorts',
+              plainText: `[Hook]:\n${short.hook}\n\n${short.scriptText}\n\n[Visual Cues]:\n${short.visualCues}`,
+              content: contentHtml,
+            });
+            navigate(`/editor/${newScript.id}`);
+          }
         }}
       />
     </div>
