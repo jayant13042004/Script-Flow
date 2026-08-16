@@ -9,6 +9,46 @@ import type {
 } from '../../types/ai';
 import { MockAiService } from './mockAiService';
 
+/**
+ * Bulletproof JSON Parser according to Gemini API integration best practices
+ */
+export function safeParseJSON<T>(rawText: string, isArray: boolean = false): T {
+  if (!rawText || rawText.trim() === '') {
+    throw new Error('Input text is empty');
+  }
+  let cleaned = rawText.trim();
+
+  // 1. Strip markdown code fences if present
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/i, '');
+    cleaned = cleaned.replace(/\n?```$/i, '');
+  }
+  cleaned = cleaned.trim();
+
+  // 2. Isolate the JSON boundaries
+  const openBracket = isArray ? '[' : '{';
+  const closeBracket = isArray ? ']' : '}';
+
+  const startIdx = cleaned.indexOf(openBracket);
+  const endIdx = cleaned.lastIndexOf(closeBracket);
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    cleaned = cleaned.substring(startIdx, endIdx + 1);
+  }
+
+  // 3. Attempt JSON parse
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (error) {
+    console.warn('Initial JSON parse failed. Attempting fallback parse...', error);
+    try {
+      const escapedCleaned = cleaned.replace(/(?<!\\)"/g, '\\"');
+      return JSON.parse(escapedCleaned) as T;
+    } catch {
+      throw new Error(`JSON parsing failed: ${(error as Error).message}`);
+    }
+  }
+}
+
 export class GeminiAiService implements AiService {
   private apiKey: string;
   private fallbackService: MockAiService;
@@ -16,7 +56,7 @@ export class GeminiAiService implements AiService {
 
   constructor() {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_AI_API_KEY || '';
-    this.modelName = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
+    this.modelName = import.meta.env.VITE_GEMINI_MODEL || 'gemini-3.6-flash';
     this.fallbackService = new MockAiService();
   }
 
@@ -26,13 +66,20 @@ export class GeminiAiService implements AiService {
       return '';
     }
 
-    // Try primary model (gemini-2.5-flash), fallback to gemini-2.0-flash / gemini-1.5-flash if needed
-    const modelsToTry = [this.modelName, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-    
+    // Supported active production models (primary to cost-effective/reasoning fallbacks)
+    const modelsToTry = [
+      this.modelName,
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-pro',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash'
+    ].filter((value, index, self) => self.indexOf(value) === index); // unique array
+
     for (const model of modelsToTry) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
-        
+
         const payload: any = {
           contents: [
             {
@@ -57,7 +104,7 @@ export class GeminiAiService implements AiService {
         if (!response.ok) {
           const errText = await response.text();
           console.warn(`Gemini API call failed for model ${model} (${response.status}):`, errText);
-          continue; // try next model fallback
+          continue;
         }
 
         const data = await response.json();
@@ -81,9 +128,10 @@ Selected text to improve: "${params.selectedText}"
 Full script context: "${params.fullScriptContext || 'N/A'}"
 Instruction: ${params.instruction}
 
-Rewrite or improve the selected text according to the instruction.
-Maintain creator tone, high engagement, and clear flow.
-Return ONLY the revised text. Do not include quotes, preamble, markdown code blocks, or extra commentary.`;
+CRITICAL RULES:
+1. Rewrite or improve the selected text strictly adhering to the instruction.
+2. Maintain natural creator tone, high retention, and engaging pacing.
+3. Return ONLY the revised text. Do NOT include quotes, preambles, markdown code blocks, or extra commentary.`;
 
     const resultText = await this.callGemini(prompt);
     if (!resultText) {
@@ -99,7 +147,9 @@ Return ONLY the revised text. Do not include quotes, preamble, markdown code blo
     }
 
     const prompt = `You are ScriptFlow, an expert content creation AI.
-Generate a complete, high-performing video/content script based on the following specifications:
+Analyze the input data and return a structured script response.
+
+INPUT SPECIFICATIONS:
 - Topic/Idea: ${params.topic}
 - Platform: ${params.platform}
 - Content Type: ${params.contentType}
@@ -108,10 +158,17 @@ Generate a complete, high-performing video/content script based on the following
 - Language: ${params.language || 'English'}
 - Custom Instructions: ${params.customInstructions || 'None'}
 
-Return a valid JSON object matching this exact schema:
+CRITICAL FORMATTING RULES:
+1. Output ONLY a valid JSON object matching the schema below.
+2. Do NOT wrap your output in markdown code blocks (e.g. do not use \`\`\`json ... \`\`\`).
+3. Do NOT include any additional conversational preamble or postscript text.
+4. CRITICAL JSON ESCAPING: Any double quotes inside JSON string values MUST be escaped (use \\" instead of "). Never output unescaped double quotes inside string fields.
+5. Do NOT leave trailing commas at the end of lists or objects.
+
+Output JSON Schema:
 {
   "hooks": ["hook option 1", "hook option 2", "hook option 3"],
-  "script": "full complete written script text with section markers if appropriate",
+  "script": "full complete written script text with logical section markers",
   "onScreenText": ["on-screen text 1", "on-screen text 2", "on-screen text 3"],
   "visualSuggestions": ["B-roll / visual cue 1", "B-roll / visual cue 2", "B-roll / visual cue 3"],
   "cta": "strong call to action text"
@@ -120,8 +177,7 @@ Return a valid JSON object matching this exact schema:
     const jsonText = await this.callGemini(prompt, true);
     if (jsonText) {
       try {
-        const cleaned = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
-        const parsed = JSON.parse(cleaned);
+        const parsed = safeParseJSON<any>(jsonText, false);
         return {
           hooks: Array.isArray(parsed.hooks) ? parsed.hooks : [],
           script: parsed.script || '',
@@ -130,7 +186,7 @@ Return a valid JSON object matching this exact schema:
           cta: parsed.cta || ''
         };
       } catch (err) {
-        console.error('Failed to parse Gemini JSON script generation response:', err);
+        console.error('Failed to parse Gemini script response with safeParseJSON:', err);
       }
     }
 
@@ -149,8 +205,9 @@ Original Script Content:
 
 Target Format: ${params.targetFormat}
 
-Repurpose this script into the target format (e.g. if X thread: numbered tweets; if LinkedIn: professional post; if Reel/Short/TikTok: timed hook & script; if Carousel: slide-by-slide text; if Email: newsletter style).
-Return ONLY the formatted, ready-to-publish content without extra commentary.`;
+CRITICAL RULES:
+1. Transform this script into the target format (e.g., X thread: numbered posts; LinkedIn: professional breakdown; Reel/Short/TikTok: timed hook & body; IG Carousel: slide text).
+2. Return ONLY the formatted, ready-to-publish content without extra commentary.`;
 
     const resultText = await this.callGemini(prompt);
     if (!resultText) {
@@ -171,7 +228,7 @@ Script Context:
 
 User Question: "${params.question}"
 
-Provide a concise, direct, and actionable answer focusing on retention, pacing, hook strength, and overall script quality.`;
+Provide a concise, direct, and actionable response focusing on retention, pacing, hook strength, and overall script quality.`;
 
     const resultText = await this.callGemini(prompt);
     if (!resultText) {
