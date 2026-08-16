@@ -1,0 +1,26 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /blog
+Allow: /blog/*
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /login
+Allow: /signup
+Allow: /share/*
+
+# Disallow private user-authenticated application dashboards from indexing to preserve crawl budget and protect user privacy
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /editor
+Disallow: /editor/*
+Disallow: /auth/callback
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Host and Sitemap
+Host: https://scriptflow.app
+Sitemap: https://scriptflow.app/sitemap.xml

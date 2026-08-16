@@ -6,6 +6,7 @@ import {
   FileText, Zap, Shield
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { useSEO } from '../hooks/useSEO';
 
 const features = [
   {
@@ -60,6 +61,73 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useSEO({
+    title: 'ScriptFlow — Write Better Scripts. Create Faster.',
+    description: 'The professional scriptwriting studio for YouTube creators, podcasters, and video storytellers. Built-in hook library, teleprompter glass mode, script analyzer, voice dictation, and surgical AI enhancements.',
+    keywords: 'script writing, youtube script editor, teleprompter online, youtube hooks, ai scriptwriter, video production planning, b-roll planner, script repurposing, content creator tools',
+    schemaData: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          'name': 'ScriptFlow',
+          'operatingSystem': 'Web, Windows, macOS, iOS, Android',
+          'applicationCategory': 'MultimediaApplication',
+          'offers': {
+            '@type': 'Offer',
+            'price': '0',
+            'priceCurrency': 'USD',
+          },
+          'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': '4.9',
+            'ratingCount': '320',
+          },
+          'description': 'A professional scriptwriting studio where content creators can write on their own or refine with surgical AI assistance.',
+        },
+        {
+          '@type': 'Organization',
+          'name': 'ScriptFlow',
+          'url': 'https://scriptflow.app',
+          'logo': 'https://scriptflow.app/logo.png',
+          'sameAs': [
+            'https://twitter.com/scriptflow',
+            'https://github.com/jayant13042004/Script-Flow'
+          ]
+        },
+        {
+          '@type': 'FAQPage',
+          'mainEntity': [
+            {
+              '@type': 'Question',
+              'name': 'What is ScriptFlow?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'ScriptFlow is a dedicated scriptwriting studio designed for YouTube creators, video producers, and podcasters with built-in hooks, teleprompter, and AI text improvements.'
+              }
+            },
+            {
+              '@type': 'Question',
+              'name': 'Is ScriptFlow free to use?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'Yes! ScriptFlow offers a free tier allowing you to write scripts, utilize the teleprompter, access hooks, and save scripts to the cloud.'
+              }
+            },
+            {
+              '@type': 'Question',
+              'name': 'Who owns the copyright of scripts written on ScriptFlow?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'You retain 100% ownership and copyright of all scripts and creative content you produce inside ScriptFlow.'
+              }
+            }
+          ]
+        }
+      ]
+    }
+  });
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);

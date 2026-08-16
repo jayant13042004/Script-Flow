@@ -1,8 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { PenLine, Sparkles, Target, Users, Zap, Heart, ArrowRight } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 export default function AboutPage() {
+  useSEO({
+    title: 'About ScriptFlow — The Studio for Content Creators',
+    description: 'Learn why we built ScriptFlow. Our mission is to empower YouTube creators and storytellers with human-first scriptwriting and surgical AI assistance.',
+    keywords: 'about scriptflow, script writing software, creator tools startup, youtube video script software',
+    schemaData: {
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      'name': 'About ScriptFlow',
+      'description': 'ScriptFlow mission and company background for creator tooling.',
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'ScriptFlow',
+        'url': 'https://scriptflow.app'
+      }
+    }
+  });
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 flex flex-col">
       {/* Navbar */}

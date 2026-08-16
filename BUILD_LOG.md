@@ -54,10 +54,21 @@
 ### Milestone 8: Startup Public Pages & Legal Suite
 - **📖 About Page (`/about`)**: Vision, mission, creator philosophy ("Less Noise, More Substance"), and platform pillars.
 - **💬 Contact Page (`/contact`)**: Message form, support email placeholder (`support@scriptflow.app`), and creator FAQs.
-- **🔒 Privacy Policy (`/privacy`)**: Enterprise data handling, zero AI training on creator scripts, TLS 1.3 encryption, and GDPR/CCPA user rights.
+- **🔒 Privacy Policy (`/privacy`)**: Enterprise data protection, zero AI training on creator scripts, TLS 1.3 encryption, and GDPR/CCPA user rights.
 - **⚖️ Terms of Service (`/terms`)**: 100% creator IP ownership, service terms, and AI disclaimer.
 - **📚 Creator Publication & Blog (`/blog`, `/blog/:slug`)**: 3 full tactical guides on 3-second hooks, 10-minute video retention architecture, and human-first AI workflow.
 - **🌐 Comprehensive Landing Page Footer**: Upgraded footer with Product, Resources, Company, and Legal link columns.
+
+### Milestone 9: World-Class SEO, Google Guidelines, & Analytics Suite
+- **🔍 Search Engine Directives (`robots.txt`)**: Crawler rules allowing all public pages, indexing directives, crawl-delay, and Sitemap specification. Disallowing private app dashboards for crawl budget optimization.
+- **🗺️ XML Sitemap (`sitemap.xml`)**: Schema-validated sitemap with priority rankings and update frequencies for all public URLs.
+- **📊 Google Analytics 4 & Google Ads Tag (`googleAnalytics.ts`)**: Integrated `gtag.js` service with SPA pageview tracking, custom conversion events (`sign_up`, `login`, `script_created`, `script_exported`, `teleprompter_opened`, `voice_dictation_used`), and Google Ads conversion tracking.
+- **✨ Dynamic Meta & Schema.org JSON-LD (`useSEO.ts`)**: Injected structured data across all routes:
+  - `SoftwareApplication` & `Organization` & `FAQPage` schemas on Homepage
+  - `BlogPosting` schemas on Creator Guides
+  - `AboutPage` and `ContactPage` schemas
+  - Canonical links, OpenGraph, and Twitter Summary Cards on every page.
+- **⚡ Core Web Vitals Optimization**: Preconnects for Google Fonts, DNS-prefetch for Google Tag Manager, and zero blocking scripts.
 
 ---
 
@@ -66,6 +77,8 @@
 | Subsystem | Technologies / Key Files |
 |---|---|
 | **Frontend Framework** | React 19, Vite, TypeScript |
+| **SEO & Meta Management** | `useSEO.ts`, `robots.txt`, `sitemap.xml`, `index.html` |
+| **Analytics & Ads** | Google Analytics 4 (GA4), Google Tag Manager, Google Ads (`src/services/analytics/googleAnalytics.ts`) |
 | **Styling** | Tailwind CSS v4, Inter & Lora Google Fonts (`src/index.css`) |
 | **Rich Text Editor** | `@tiptap/react`, `@tiptap/starter-kit` (`src/components/editor/ScriptEditor.tsx`) |
 | **Voice Mode Dictation** | Web Speech API + Gemini AI (`src/components/ai/VoiceScriptModal.tsx`) |

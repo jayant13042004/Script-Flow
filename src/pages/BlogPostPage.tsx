@@ -2,10 +2,41 @@ import React from 'react';
 import { useParams, Link, Navigate } from 'react-router';
 import { PenLine, ArrowLeft, Clock, Calendar, User, Tag, Sparkles, Share2 } from 'lucide-react';
 import { blogPosts } from '../data/blogPosts';
+import { useSEO } from '../hooks/useSEO';
 
 export default function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const post = blogPosts.find((p) => p.slug === slug);
+
+  useSEO({
+    title: post ? `${post.title} | ScriptFlow` : 'Creator Guide',
+    description: post?.excerpt || 'Read scriptwriting and video retention guides on ScriptFlow.',
+    keywords: post?.tags.join(', ') || 'scriptwriting guide, youtube hooks',
+    ogType: 'article',
+    author: post?.author,
+    publishedTime: post ? new Date(post.date).toISOString() : undefined,
+    schemaData: post ? {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      'headline': post.title,
+      'description': post.excerpt,
+      'author': {
+        '@type': 'Person',
+        'name': post.author,
+        'jobTitle': post.authorRole
+      },
+      'datePublished': new Date(post.date).toISOString(),
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'ScriptFlow',
+        'url': 'https://scriptflow.app'
+      },
+      'mainEntityOfPage': {
+        '@type': 'WebPage',
+        '@id': `https://scriptflow.app/blog/${post.slug}`
+      }
+    } : undefined
+  });
 
   if (!post) {
     return <Navigate to="/blog" replace />;

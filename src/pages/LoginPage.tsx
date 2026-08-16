@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { PenLine, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { useSEO } from '../hooks/useSEO';
 
 export default function LoginPage() {
+  useSEO({
+    title: 'Log In to ScriptFlow | Creator Studio',
+    description: 'Sign in to access your script library, teleprompter, hook library, and video production plans on ScriptFlow.',
+  });
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuthStore();
   const [email, setEmail] = useState('');

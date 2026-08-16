@@ -1,8 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { PenLine, Shield, Lock, Eye, FileText } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 export default function PrivacyPage() {
+  useSEO({
+    title: 'Privacy Policy | ScriptFlow',
+    description: 'Read the ScriptFlow privacy policy. We protect creator data with TLS 1.3 encryption and never train public AI models on your private scripts.',
+    keywords: 'scriptflow privacy, creator data protection, script confidentiality',
+  });
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 flex flex-col">
       {/* Navbar */}

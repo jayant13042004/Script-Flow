@@ -1,8 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { PenLine, FileCheck, Scale, CheckCircle } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 export default function TermsPage() {
+  useSEO({
+    title: 'Terms of Service | ScriptFlow',
+    description: 'ScriptFlow terms of service. You retain 100% intellectual property ownership and copyright over your scripts and video production plans.',
+    keywords: 'scriptflow terms, creator copyright, script ownership terms',
+  });
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100 flex flex-col">
       {/* Navbar */}

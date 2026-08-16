@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { PenLine, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { useSEO } from '../hooks/useSEO';
 
 export default function SignupPage() {
+  useSEO({
+    title: 'Create Your Free ScriptFlow Account',
+    description: 'Join thousands of YouTube creators and podcasters using ScriptFlow to write, refine, and produce better video scripts.',
+  });
   const navigate = useNavigate();
   const { signup, loginWithGoogle } = useAuthStore();
   const [displayName, setDisplayName] = useState('');

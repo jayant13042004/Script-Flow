@@ -2,8 +2,26 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { PenLine, Sparkles, BookOpen, Clock, Tag, ArrowRight } from 'lucide-react';
 import { blogPosts } from '../data/blogPosts';
+import { useSEO } from '../hooks/useSEO';
 
 export default function BlogPage() {
+  useSEO({
+    title: 'Creator Publication & Scriptwriting Guides | ScriptFlow',
+    description: 'Tactical guides, hook formulas, YouTube retention masterclasses, and AI workflow blueprints for serious content creators.',
+    keywords: 'youtube scriptwriting guide, viral hook formulas, video retention framework, shorts scriptwriting, creator publication',
+    schemaData: {
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      'name': 'The ScriptFlow Publication',
+      'description': 'Tactical guides on high-retention scriptwriting, hook psychology, and creator workflows.',
+      'url': 'https://scriptflow.app/blog',
+      'publisher': {
+        '@type': 'Organization',
+        'name': 'ScriptFlow',
+        'url': 'https://scriptflow.app'
+      }
+    }
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const categories = ['All', 'YouTube Strategy', 'Retention & Growth', 'AI & Workflow'];
 

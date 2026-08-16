@@ -2,8 +2,20 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { PenLine, Mail, MessageSquare, HelpCircle, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button, Input, Textarea } from '../components/ui';
+import { useSEO } from '../hooks/useSEO';
 
 export default function ContactPage() {
+  useSEO({
+    title: 'Contact Support & Founders | ScriptFlow',
+    description: 'Get in touch with the ScriptFlow creator team for support, feature requests, creator partnerships, and feedback.',
+    keywords: 'contact scriptflow, scriptflow support, creator partnerships, youtube tooling support',
+    schemaData: {
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      'name': 'Contact ScriptFlow',
+      'description': 'Customer support and creator contact channels for ScriptFlow.'
+    }
+  });
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
