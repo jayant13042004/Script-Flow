@@ -13,6 +13,8 @@ import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontSize } from '../components/editor/extensions/FontSize';
 
 import { EditorToolbar } from '../components/editor/EditorToolbar';
 import { EditorStats } from '../components/editor/EditorStats';
@@ -109,7 +111,9 @@ export default function EditorPage() {
         heading: { levels: [1, 2, 3] },
       }),
       Underline,
-      Highlight.configure({ multicolor: false }),
+      TextStyle,
+      FontSize,
+      Highlight.configure({ multicolor: true }),
       Placeholder.configure({
         placeholder: 'Start writing your script...',
       }),
