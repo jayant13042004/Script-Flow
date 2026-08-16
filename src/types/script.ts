@@ -1,3 +1,5 @@
+export type ScriptStatus = 'draft' | 'in-production' | 'filmed' | 'published';
+
 export interface Script {
   id: string;
   userId: string;
@@ -15,8 +17,21 @@ export interface Script {
   productionPlan: ProductionSection[] | null;
   structure: ScriptSection[] | null;
   isArchived: boolean;
+  status: ScriptStatus;
+  isPublic: boolean;
+  shareToken: string | null;
+  audioRecordings?: AudioRecording[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AudioRecording {
+  id: string;
+  scriptId: string;
+  name: string;
+  audioUrl: string;
+  duration: number; // seconds
+  createdAt: string;
 }
 
 export interface ScriptVersion {

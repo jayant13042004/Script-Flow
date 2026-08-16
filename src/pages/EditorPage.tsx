@@ -25,6 +25,15 @@ import { ProductionPlanner } from '../components/planner/ProductionPlanner';
 import { ScriptStructure } from '../components/structure/ScriptStructure';
 import { RepurposePanel } from '../components/repurpose/RepurposePanel';
 import { Modal } from '../components/ui/Modal';
+import { VoiceScriptModal } from '../components/ai/VoiceScriptModal';
+import { TeleprompterModal } from '../components/teleprompter/TeleprompterModal';
+import { ExportModal } from '../components/editor/ExportModal';
+import { ImportModal } from '../components/editor/ImportModal';
+import { ShareModal } from '../components/share/ShareModal';
+import { AudioRecorder } from '../components/audio/AudioRecorder';
+import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
+import { exportToPdf, downloadFile } from '../lib/exportImport';
+import { Mic, Tv, Share2, Upload, Volume2 } from 'lucide-react';
 
 import { useEditorStore } from '../stores/editorStore';
 import { useScriptStore } from '../stores/scriptStore';
@@ -67,8 +76,15 @@ export default function EditorPage() {
   const { user } = useAuthStore();
 
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showTeleprompter, setShowTeleprompter] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [currentScriptObj, setCurrentScriptObj] = useState<any>(null);
   const [productionPlan, setProductionPlan] = useState<ProductionSection[]>([]);
   const [structure, setStructure] = useState<ScriptSection[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -119,6 +135,7 @@ export default function EditorPage() {
       setScriptId(id);
       loadScript(id).then((script) => {
         if (script) {
+          setCurrentScriptObj(script);
           setTitle(script.title);
           if (script.content && editor) {
             editor.commands.setContent(script.content);
@@ -282,14 +299,86 @@ export default function EditorPage() {
           </div>
 
           {/* Right */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Status Dropdown */}
+            {currentScriptObj && (
+              <ScriptStatusBadge
+                status={currentScriptObj.status || 'draft'}
+                onChange={async (newStatus) => {
+                  if (id) {
+                    await updateScript(id, { status: newStatus });
+                    setCurrentScriptObj((prev: any) => prev ? { ...prev, status: newStatus } : prev);
+                  }
+                }}
+              />
+            )}
+
+            {/* Voice Mode Dictation */}
+            <button
+              onClick={() => setShowVoiceModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+              title="Voice Mode Dictation"
+            >
+              <Mic className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+              <span className="hidden sm:inline">Voice Mode</span>
+            </button>
+
+            {/* Teleprompter Button */}
+            <button
+              onClick={() => setShowTeleprompter(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
+              title="Teleprompter Mode"
+            >
+              <Tv className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Teleprompter</span>
+            </button>
+
+            {/* AI Generate Button */}
             <button
               onClick={() => setShowGenerateModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
               title="Generate with AI"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Generate</span>
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">AI Generate</span>
+            </button>
+
+            {/* Audio Voice Recorder */}
+            <button
+              onClick={() => setShowAudioRecorder(!showAudioRecorder)}
+              className={`p-2 rounded-lg transition-colors ${
+                showAudioRecorder ? 'bg-amber-100 text-amber-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Audio Voice Recorder"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+
+            {/* Share Button */}
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Share Public Link"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+
+            {/* Export Button */}
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Export Script (PDF, MD, Word, TXT)"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+
+            {/* Import Button */}
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Import Script File"
+            >
+              <Upload className="w-4 h-4" />
             </button>
 
             {/* Panel toggles */}
@@ -522,6 +611,85 @@ export default function EditorPage() {
           )}
         </div>
       </Modal>
+
+      {/* Audio Voice Recorder Drawer */}
+      {showAudioRecorder && (
+        <div className="fixed bottom-12 right-6 z-40 w-96 shadow-2xl rounded-2xl overflow-hidden animate-slide-in-up no-print">
+          <AudioRecorder
+            onSaveAudio={(url, name) => {
+              console.log('Audio recorded:', url, name);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Voice Mode Dictation Modal */}
+      <VoiceScriptModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        onInsert={(scriptText) => {
+          if (editor) {
+            const pos = editor.state.selection.from;
+            editor.chain().focus().insertContentAt(pos, scriptText + '\n\n').run();
+          }
+          setShowVoiceModal(false);
+        }}
+      />
+
+      {/* Teleprompter Modal */}
+      <TeleprompterModal
+        isOpen={showTeleprompter}
+        onClose={() => setShowTeleprompter(false)}
+        title={title}
+        plainText={plainText}
+      />
+
+      {/* Export Modal */}
+      {currentScriptObj && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          script={{
+            ...currentScriptObj,
+            title,
+            plainText,
+            wordCount,
+            estimatedDuration: duration,
+          }}
+        />
+      )}
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={(importedTitle, importedText) => {
+          setTitle(importedTitle);
+          if (editor) {
+            editor.commands.setContent(`<p>${importedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`);
+          }
+          setIsDirty(true);
+          setShowImportModal(false);
+        }}
+      />
+
+      {/* Share Public Link Modal */}
+      {currentScriptObj && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          script={{
+            ...currentScriptObj,
+            title,
+          }}
+          onUpdateScript={async (updates) => {
+            if (id) {
+              await updateScript(id, updates);
+              setCurrentScriptObj((prev: any) => prev ? { ...prev, ...updates } : prev);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

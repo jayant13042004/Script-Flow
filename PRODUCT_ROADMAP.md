@@ -27,18 +27,72 @@ Legend:
 
 ---
 
-## 3. 🔐 Authentication & Security
+## 3. 🎙️ Voice Mode Dictation & AI Structuring
+- [x] Real-time speech-to-text dictation via Web Speech API
+- [x] Live visual recording button & transcript view
+- [x] 1-Click AI Structuring engine converting raw rambling speech into clean, formatted video scripts (Hook, Core Points, Visual Notes, CTA)
+- [x] Direct insertion into TipTap editor
+
+---
+
+## 4. 📺 Creator Teleprompter Studio
+- [x] Fullscreen dark mode teleprompter interface (`TeleprompterModal.tsx`)
+- [x] Smooth auto-scroll engine (`requestAnimationFrame`) synced to WPM delivery (60–300 WPM)
+- [x] Keyboard shortcuts (Spacebar play/pause, Up/Down arrow speed adjust, Esc exit)
+- [x] Horizontal (`scaleX(-1)`) & Vertical (`scaleY(-1)`) mirror flipping for physical teleprompter glass rigs
+- [x] Center reading focus guide line highlight
+- [x] Font size slider (24px to 72px) & Font family toggle (Sans / Serif / Mono)
+
+---
+
+## 5. 🎙️ In-Browser Audio Reader & Voice Recorder
+- [x] MediaRecorder API microphone voice recorder (`AudioRecorder.tsx`)
+- [x] Live recording timer and pulse animation
+- [x] Audio playback player & `.webm` clip downloading for line readings
+
+---
+
+## 6. 📄 Export & Import Suite
+- [x] Export to PDF format (`exportToPdf`)
+- [x] Export to Markdown (`.md`) format (`exportToMarkdown`)
+- [x] Export to Microsoft Word (`.doc`) format (`exportToWordHtml`)
+- [x] Export to Plain Text (`.txt`) format (`exportToTxt`)
+- [x] Export to Teleprompter Text format (`exportToTeleprompterTxt`)
+- [x] Import drag-and-drop file reader (`ImportModal.tsx`) for `.txt`, `.md`, `.doc` text extraction
+
+---
+
+## 7. 🔗 Public Share Links & View Mode
+- [x] Share token generator modal (`ShareModal.tsx`)
+- [x] Public read-only route (`/share/:token`)
+- [x] Shared Script viewer with creator metrics, copy button, PDF/TXT export, and branding banner (`SharedScriptPage.tsx`)
+
+---
+
+## 8. 🏷️ Script Status Workflow & Creator Analytics
+- [x] Script production status tags (📝 Draft, 🎬 In Production, 🎥 Filmed, 🚀 Published) (`ScriptStatusBadge.tsx`)
+- [x] Status tag selector dropdown in Editor header
+- [x] Creator Analytics Widget (`AnalyticsWidget.tsx`) in Dashboard: Total Scripts, Total Words, Total Video Production Hours, Completed Count, Platform Breakdown, Writing Habit Streaks
+
+---
+
+## 9. 📱 Mobile & PWA Optimization
+- [x] Web App Manifest (`public/manifest.json`) for "Add to Home Screen" on iPad, Mac, Windows, Android, and iOS
+- [x] PWA theme meta tags & mobile status bar configuration (`index.html`)
+
+---
+
+## 10. 🔐 Authentication & Security
 - [x] Supabase Auth SDK integration
 - [x] Email & Password sign-up and login flow
 - [x] Google OAuth 2.0 ("Sign in with Google") integration
 - [x] OAuth redirect callback page (`AuthCallbackPage.tsx`)
 - [x] User display name & Google profile picture avatar sync in UI
 - [x] Protected routes (`ProtectedRoute`, `AuthRedirect`)
-- [x] Instant sign-up mode (email confirmation optional)
 
 ---
 
-## 4. ☁️ Database & Cloud Storage
+## 11. ☁️ Database & Cloud Storage
 - [x] Supabase PostgreSQL schema (`supabase/schema.sql`)
 - [x] Row Level Security (RLS) policies for user data isolation
 - [x] Cloud storage service (`SupabaseStorageService`)
@@ -47,7 +101,7 @@ Legend:
 
 ---
 
-## 5. 🤖 Gemini AI Suite
+## 12. 🤖 Gemini AI Suite
 - [x] Integration of Google Gemini API (`gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`)
 - [x] Bulletproof `safeParseJSON` utility for markdown stripping & quote escaping
 - [x] Non-destructive right-side AI assistant panel (`AiPanel.tsx`)
@@ -57,39 +111,7 @@ Legend:
 
 ---
 
-## 6. 🧰 Creator Toolkit & Productivity
-- [x] 60+ Viral hook library across 12 categories (`HookLibrary.tsx`)
-- [x] Custom hook creator modal
-- [x] Hook favoriting & category filter system
-- [x] Transparent rule-based 100-point Script Analyzer (`ScriptAnalyzer.tsx`)
-- [x] Drag-and-drop B-Roll & Production Planner (`ProductionPlanner.tsx`)
-- [x] Script Structure Frameworks (Hook → Problem → Solution → CTA, AIDA, PAS) (`ScriptStructure.tsx`)
-- [x] Multi-platform 1-click repurposer (Shorts, Reels, TikTok, X Threads, LinkedIn, Newsletter) (`RepurposePanel.tsx`)
-- [x] Landing page with hero, features grid, benefits list, and editor preview (`LandingPage.tsx`)
-- [x] Dashboard with script search, folder management, grid cards, duplicate & delete (`DashboardPage.tsx`)
-
----
-
-## 7. 📄 Export & Import Capabilities (Pending)
-- [ ] Export script to PDF format
-- [ ] Export script to Markdown (`.md`) format
-- [ ] Export script to Microsoft Word (`.docx`) format
-- [ ] Export script to Plain Text (`.txt`) format
-- [ ] Export script to Final Draft format (`.fdx`)
-- [ ] Import `.docx` or `.txt` files directly into editor
-
----
-
-## 8. 📺 Presentation & Performance Tools (Pending)
-- [ ] Fullscreen scrolling Teleprompter Mode
-- [ ] Adjustable teleprompter scrolling speed (WPM control)
-- [ ] Text size & text mirroring controls (for physical teleprompter glass)
-- [ ] In-browser audio voice recorder for line readings
-- [ ] Audio playback & waveform preview
-
----
-
-## 9. 💳 Monetization & Business Engine (Pending)
+## 13. 💳 Monetization & Business Engine (Pending)
 - [ ] Connect Stripe / Razorpay billing engine
 - [ ] Free Tier limits (e.g. 3 scripts, 10 AI generations/month)
 - [ ] Pro Tier subscription ($12–$19/month) with unlimited AI & cloud sync
@@ -97,19 +119,6 @@ Legend:
 
 ---
 
-## 10. 👥 Teamwork & Collaboration (Pending)
-- [ ] Generate secret public read-only share link for clients/editors
+## 14. 👥 Teamwork & Collaboration (Pending)
 - [ ] Commenting & feedback threads on script lines
 - [ ] Shared team workspace folders
-
----
-
-## 11. 📊 Creator Analytics (Pending)
-- [ ] Writing habit heatmaps & weekly word count graphs
-- [ ] Script library status tags (Draft, In Production, Filmed, Published)
-
----
-
-## 12. 📱 Mobile & Tablet Optimization (Pending)
-- [ ] Progressive Web App (PWA) manifest for home screen install
-- [ ] Tablet touch controls optimization for iPad script writing

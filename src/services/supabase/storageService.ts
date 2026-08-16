@@ -20,6 +20,9 @@ interface ScriptRow {
   production_plan: any;
   structure: any;
   is_archived: boolean;
+  status?: string | null;
+  is_public?: boolean | null;
+  share_token?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +74,9 @@ const mapScript = (row: ScriptRow): Script => ({
   productionPlan: row.production_plan ?? null,
   structure: row.structure ?? null,
   isArchived: row.is_archived ?? false,
+  status: (row.status as any) || 'draft',
+  isPublic: row.is_public ?? false,
+  shareToken: row.share_token ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -178,6 +184,9 @@ export class SupabaseStorageService {
     if (updates.productionPlan !== undefined) dbUpdates.production_plan = updates.productionPlan;
     if (updates.structure !== undefined) dbUpdates.structure = updates.structure;
     if (updates.isArchived !== undefined) dbUpdates.is_archived = updates.isArchived;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.isPublic !== undefined) dbUpdates.is_public = updates.isPublic;
+    if (updates.shareToken !== undefined) dbUpdates.share_token = updates.shareToken;
 
     const { data, error } = await supabase
       .from('scripts')
@@ -187,6 +196,18 @@ export class SupabaseStorageService {
       .single();
 
     if (error) throw new Error(error.message);
+    return mapScript(data as ScriptRow);
+  }
+
+  async getScriptByShareToken(token: string): Promise<Script | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('scripts')
+      .select('*')
+      .eq('share_token', token)
+      .single();
+
+    if (error || !data) return null;
     return mapScript(data as ScriptRow);
   }
 

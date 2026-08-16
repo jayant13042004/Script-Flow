@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import SharedScriptPage from './pages/SharedScriptPage';
 import DashboardPage from './pages/DashboardPage';
 import EditorPage from './pages/EditorPage';
 import { ToastContainer } from './components/ui/Toast';
@@ -81,6 +82,7 @@ export default function App() {
           }
         />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/share/:token" element={<SharedScriptPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer />

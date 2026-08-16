@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS scripts (
   production_plan JSONB,
   structure JSONB,
   is_archived BOOLEAN DEFAULT FALSE,
+  status TEXT DEFAULT 'draft',
+  is_public BOOLEAN DEFAULT FALSE,
+  share_token TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

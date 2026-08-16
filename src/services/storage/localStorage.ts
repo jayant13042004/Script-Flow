@@ -82,6 +82,9 @@ export class LocalStorageService implements StorageService {
       productionPlan: script.productionPlan || null,
       structure: script.structure || null,
       isArchived: script.isArchived || false,
+      status: script.status || 'draft',
+      isPublic: script.isPublic || false,
+      shareToken: script.shareToken || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...script

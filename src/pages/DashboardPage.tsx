@@ -9,7 +9,9 @@ import { useScriptStore } from '../stores/scriptStore';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
 import { formatRelativeTime, formatDuration } from '../lib/utils';
-import type { Script, Folder } from '../types';
+import { AnalyticsWidget } from '../components/dashboard/AnalyticsWidget';
+import { ScriptStatusBadge } from '../components/dashboard/ScriptStatusBadge';
+import type { Script, Folder, ScriptStatus } from '../types';
 
 function ScriptCard({ script, onOpen, onDelete, onDuplicate }: {
   script: Script;
@@ -66,21 +68,24 @@ function ScriptCard({ script, onOpen, onDelete, onDuplicate }: {
         </p>
       )}
 
-      <div className="flex items-center gap-4 text-xs text-gray-400">
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {formatRelativeTime(script.updatedAt)}
-        </span>
-        <span className="flex items-center gap-1">
-          <Type className="w-3 h-3" />
-          {script.wordCount} words
-        </span>
-        {script.estimatedDuration > 0 && (
+      <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <Timer className="w-3 h-3" />
-            {formatDuration(script.estimatedDuration)}
+            <Clock className="w-3 h-3" />
+            {formatRelativeTime(script.updatedAt)}
           </span>
-        )}
+          <span className="flex items-center gap-1">
+            <Type className="w-3 h-3" />
+            {script.wordCount} words
+          </span>
+          {script.estimatedDuration > 0 && (
+            <span className="flex items-center gap-1">
+              <Timer className="w-3 h-3" />
+              {formatDuration(script.estimatedDuration)}
+            </span>
+          )}
+        </div>
+        <ScriptStatusBadge status={script.status || 'draft'} readOnly />
       </div>
     </div>
   );
@@ -280,6 +285,11 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="flex-1 min-w-0">
+          {/* Creator Analytics & Habit Widget */}
+          <div className="mb-8">
+            <AnalyticsWidget scripts={scripts} />
+          </div>
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-xl font-bold text-gray-900">
