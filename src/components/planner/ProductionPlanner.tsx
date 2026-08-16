@@ -166,14 +166,14 @@ export const ProductionPlanner: React.FC<ProductionPlannerProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-96 bg-gray-50 border-l border-gray-200 shadow-xl flex flex-col z-40 transform transition-transform duration-300">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+    <div className="h-full flex flex-col w-full bg-gray-50 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-2 font-semibold text-gray-800">
-          <Clapperboard className="text-purple-500" size={20} />
-          <h2>Production Plan</h2>
+          <Clapperboard className="text-purple-500 w-4 h-4" />
+          <h2 className="text-sm font-bold">Production Plan (B-Roll)</h2>
         </div>
-        <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-          <X size={20} />
+        <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+          <X className="w-4 h-4" />
         </button>
       </div>
 

@@ -148,8 +148,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         title="Redo (Ctrl+Y)"
       />
       
-      <div className="flex-1" />
-      
+      <Separator />
+
       <ToolbarButton
         onClick={toggleFindReplace}
         isActive={showFindReplace}

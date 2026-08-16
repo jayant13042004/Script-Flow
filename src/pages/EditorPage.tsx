@@ -20,7 +20,6 @@ import { FindReplace } from '../components/editor/FindReplace';
 import { AiPanel } from '../components/ai/AiPanel';
 import { AiGenerateForm } from '../components/ai/AiGenerateForm';
 import { HookLibrary } from '../components/hooks/HookLibrary';
-import { ScriptAnalyzer } from '../components/analyzer/ScriptAnalyzer';
 import { ProductionPlanner } from '../components/planner/ProductionPlanner';
 import { ScriptStructure } from '../components/structure/ScriptStructure';
 import { RepurposePanel } from '../components/repurpose/RepurposePanel';
@@ -45,14 +44,13 @@ import { countWords, countCharacters, estimateDuration, getPlainTextFromHtml } f
 import type { ProductionSection, ScriptSection } from '../types';
 import type { AiGenerateResponse } from '../types/ai';
 
-type PanelType = 'ai' | 'hooks' | 'analyzer' | 'planner' | 'structure' | 'repurpose';
+type PanelType = 'ai' | 'hooks' | 'planner' | 'structure' | 'repurpose';
 
 const panelButtons: { id: PanelType; icon: React.ElementType; label: string }[] = [
   { id: 'ai', icon: Sparkles, label: 'AI Assistant' },
-  { id: 'hooks', icon: Lightbulb, label: 'Hooks' },
-  { id: 'analyzer', icon: BarChart3, label: 'Analyze' },
-  { id: 'planner', icon: Clapperboard, label: 'B-Roll' },
-  { id: 'structure', icon: Layout, label: 'Structure' },
+  { id: 'hooks', icon: Lightbulb, label: 'Hook Library' },
+  { id: 'planner', icon: Clapperboard, label: 'B-Roll & Planner' },
+  { id: 'structure', icon: Layout, label: 'Structure Frameworks' },
   { id: 'repurpose', icon: RefreshCw, label: 'Repurpose' },
 ];
 
@@ -268,12 +266,48 @@ export default function EditorPage() {
     if (dup) navigate(`/editor/${dup.id}`);
   };
 
+  // Fullscreen toggle with native browser API
+  const handleToggleFullscreen = () => {
+    toggleFullscreen();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = !!document.fullscreenElement;
+      if (isFs !== isFullscreen) {
+        toggleFullscreen();
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, [isFullscreen, toggleFullscreen]);
+
   const editorContainerClasses = isFullscreen
-    ? 'editor-fullscreen'
+    ? 'fixed inset-0 z-50 bg-white overflow-y-auto'
     : 'min-h-screen bg-white';
 
   return (
     <div className={editorContainerClasses}>
+      {/* Floating Zen Mode Exit Button when Fullscreen */}
+      {isFullscreen && (
+        <div className="fixed top-4 right-6 z-50 animate-fade-in">
+          <button
+            onClick={handleToggleFullscreen}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900/80 hover:bg-gray-900 text-white text-xs font-medium rounded-full shadow-lg backdrop-blur-md transition-all"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Exit Fullscreen (Esc)</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 no-print">
         <div className="px-4 h-14 flex items-center justify-between gap-4">
@@ -401,7 +435,7 @@ export default function EditorPage() {
 
             <div className="border-l border-gray-200 ml-1 pl-1 flex items-center gap-0.5">
               <button
-                onClick={toggleFullscreen}
+                onClick={handleToggleFullscreen}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
@@ -497,13 +531,6 @@ export default function EditorPage() {
                 isOpen={true}
                 onClose={() => setActivePanel(null)}
                 onInsert={handleInsertHook}
-              />
-            )}
-            {activePanel === 'analyzer' && (
-              <ScriptAnalyzer
-                isOpen={true}
-                onClose={() => setActivePanel(null)}
-                plainText={plainText}
               />
             )}
             {activePanel === 'planner' && (
