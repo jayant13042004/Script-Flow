@@ -23,6 +23,10 @@ export function useAutosave() {
   useEffect(() => {
     if (!isDirty || !scriptId) return;
 
+    // Do not autosave empty, untouched scripts
+    const isUntouched = (!title.trim() || title === 'Untitled Script') && !plainText?.trim();
+    if (isUntouched) return;
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

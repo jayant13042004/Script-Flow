@@ -175,15 +175,21 @@ export default function EditorPage() {
     }
   }, [editor, id, isInitialized]);
 
-  // Autosave
-  const saveScript = useCallback(() => {
+  // Autosave / Manual Save
+  const saveScript = useCallback(async () => {
     if (!id || !editor) return;
     const json = editor.getJSON();
     const text = editor.getText();
     const html = editor.getHTML();
     const words = countWords(text);
 
-    updateScript(id, {
+    // If script has nothing written and is untitled, do not save
+    const isUntouched = (!title.trim() || title === 'Untitled Script') && !text.trim() && productionPlan.length === 0 && structure.length === 0;
+    if (isUntouched) {
+      return;
+    }
+
+    await updateScript(id, {
       title,
       content: json,
       plainText: text,
@@ -303,8 +309,14 @@ export default function EditorPage() {
           {/* Left */}
           <div className="flex items-center gap-3 min-w-0">
             <button
-              onClick={() => {
-                saveScript();
+              onClick={async () => {
+                const text = editor ? editor.getText().trim() : '';
+                const isUntouched = (!title.trim() || title === 'Untitled Script') && !text && productionPlan.length === 0 && structure.length === 0;
+                if (isUntouched && id) {
+                  await deleteScript(id);
+                } else {
+                  await saveScript();
+                }
                 navigate('/dashboard');
               }}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"

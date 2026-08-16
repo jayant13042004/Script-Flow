@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Sparkles, FileText, Check, AlertCircle, Volume2, Loader2, RefreshCw } from 'lucide-react';
+import {
+  Mic, Square, Sparkles, FileText, Check, AlertCircle,
+  Wand2, AlignLeft, RefreshCw, Copy, Flame
+} from 'lucide-react';
 import { Modal, Button, Textarea } from '../ui';
 import { getAiService } from '../../services/ai';
 
@@ -14,118 +17,104 @@ export const VoiceScriptModal: React.FC<VoiceScriptModalProps> = ({
   onClose,
   onInsert,
 }) => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [listeningSeconds, setListeningSeconds] = useState(0);
   const [transcript, setTranscript] = useState('');
-  const [structuredScript, setStructuredScript] = useState('');
-  const [isStructuring, setIsStructuring] = useState(false);
+  
+  // Output tabs / versions
+  const [activeTab, setActiveTab] = useState<'raw' | 'structured' | 'converted'>('raw');
+  const [structuredText, setStructuredText] = useState('');
+  const [convertedScript, setConvertedScript] = useState('');
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processType, setProcessType] = useState<'structure' | 'convert' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
     };
   }, []);
 
-  const startRecording = async () => {
+  const startListening = () => {
     setError(null);
-    audioChunksRef.current = [];
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setError('Live speech recognition is not supported in this browser. You can type or paste your spoken thoughts below.');
+      return;
+    }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : 'audio/mp4';
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      recognition.onstart = () => {
+        setIsListening(true);
+        setListeningSeconds(0);
+        timerRef.current = setInterval(() => {
+          setListeningSeconds((prev) => prev + 1);
+        }, 1000);
+      };
 
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+        setTranscript(finalTranscript.trim());
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition notice:', event.error);
+        if (event.error === 'not-allowed') {
+          setError('Microphone access was denied. Please allow microphone permissions in your browser.');
+          stopListening();
         }
       };
 
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        await processAudioWithAI(audioBlob, mimeType);
+      recognition.onend = () => {
+        setIsListening(false);
+        if (timerRef.current) clearInterval(timerRef.current);
       };
 
-      recorder.start(500); // 500ms chunks
-      mediaRecorderRef.current = recorder;
-      setIsRecording(true);
-      setRecordingSeconds(0);
-
-      timerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
-      }, 1000);
+      recognition.start();
+      recognitionRef.current = recognition;
     } catch (err: any) {
-      console.error('Microphone error:', err);
-      setError('Could not access microphone. Please allow microphone access in your browser.');
-      setIsRecording(false);
+      console.error('Speech recognition error:', err);
+      setError('Could not start speech recognition. You can type your thoughts directly.');
+      setIsListening(false);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsListening(false);
   };
 
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = (reader.result as string).split(',')[1];
-        resolve(base64String);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const processAudioWithAI = async (audioBlob: Blob, mimeType: string) => {
-    setIsTranscribing(true);
-    setError(null);
-
-    try {
-      const base64 = await blobToBase64(audioBlob);
-      const aiService = getAiService();
-
-      if (aiService.transcribeAudio) {
-        const response = await aiService.transcribeAudio({
-          audioBase64: base64,
-          mimeType,
-        });
-
-        if (response.transcript) {
-          setTranscript(response.transcript);
-        }
-        if (response.structuredScript) {
-          setStructuredScript(response.structuredScript);
-        }
-      } else {
-        // Fallback
-        setTranscript('Audio recorded successfully. Click "Structure with AI" below.');
-      }
-    } catch (err: any) {
-      console.warn('AI transcription error:', err);
-      setError('Could not transcribe audio. You can type or paste your spoken ideas directly below.');
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
-  const handleStructureScript = async () => {
+  // Option 1: Structure with Gemini (Keeps exact words, only formats into clean readable structure)
+  const handleStructureWithGemini = async () => {
     if (!transcript.trim()) return;
-    setIsStructuring(true);
+    setIsProcessing(true);
+    setProcessType('structure');
     setError(null);
 
     try {
@@ -133,125 +122,289 @@ export const VoiceScriptModal: React.FC<VoiceScriptModalProps> = ({
       const response = await aiService.improveText({
         selectedText: transcript,
         instruction:
-          'Turn this raw spoken transcript/rambling into a clean, well-structured YouTube video script with Hook, Core Points, Visual Notes, and Call to Action.',
+          'Format and structure this spoken transcript with proper punctuation, clean paragraph breaks, bold headings, and bullet points. IMPORTANT: DO NOT rewrite or change the creator’s words or ideas. Only improve formatting and readability.',
         fullScriptContext: '',
       });
-      setStructuredScript(response.result);
+      setStructuredText(response.result);
+      setActiveTab('structured');
     } catch (err: any) {
-      setError(err.message || 'Failed to structure script with AI.');
+      setError(err.message || 'Failed to structure with AI.');
     } finally {
-      setIsStructuring(false);
+      setIsProcessing(false);
+      setProcessType(null);
+    }
+  };
+
+  // Option 2: Convert to Script with Gemini (Polishes, rewrites, and crafts into a high-retention video script)
+  const handleConvertWithGemini = async () => {
+    if (!transcript.trim()) return;
+    setIsProcessing(true);
+    setProcessType('convert');
+    setError(null);
+
+    try {
+      const aiService = getAiService();
+      const response = await aiService.improveText({
+        selectedText: transcript,
+        instruction:
+          'Convert these spoken thoughts into a polished, high-retention video script. Include an engaging Hook, structured body points with natural conversational flow, and a compelling Call to Action.',
+        fullScriptContext: '',
+      });
+      setConvertedScript(response.result);
+      setActiveTab('converted');
+    } catch (err: any) {
+      setError(err.message || 'Failed to convert to script with AI.');
+    } finally {
+      setIsProcessing(false);
+      setProcessType(null);
     }
   };
 
   const handleInsert = () => {
-    const textToInsert = structuredScript.trim() || transcript.trim();
+    let textToInsert = transcript.trim();
+    if (activeTab === 'structured' && structuredText.trim()) {
+      textToInsert = structuredText.trim();
+    } else if (activeTab === 'converted' && convertedScript.trim()) {
+      textToInsert = convertedScript.trim();
+    }
+
     if (textToInsert) {
       onInsert(textToInsert);
     }
     onClose();
   };
 
+  const handleCopyCurrent = async () => {
+    let currentText = transcript;
+    if (activeTab === 'structured') currentText = structuredText;
+    if (activeTab === 'converted') currentText = convertedScript;
+
+    if (currentText) {
+      await navigator.clipboard.writeText(currentText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Voice Mode Scriptwriter" size="lg">
-      <div className="space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} title="Voice Dictation Studio" size="lg">
+      <div className="space-y-5">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Big Dictation Button */}
-        <div className="flex flex-col items-center justify-center p-6 bg-purple-50/50 rounded-2xl border border-purple-100 transition-all">
+        {/* Live Mic Recorder Card */}
+        <div className="flex items-center justify-between p-4 bg-purple-50/70 rounded-2xl border border-purple-100">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={isListening ? stopListening : startListening}
+              className={`flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${
+                isListening
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-500/30 animate-pulse'
+                  : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md active:scale-95'
+              }`}
+              title={isListening ? 'Stop Listening' : 'Start Live Dictation'}
+            >
+              {isListening ? (
+                <Square className="w-6 h-6 fill-current" />
+              ) : (
+                <Mic className="w-6 h-6" />
+              )}
+            </button>
+
+            <div>
+              <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                {isListening ? (
+                  <span className="flex items-center gap-2 text-red-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+                    Listening & Transcribing ({listeningSeconds}s)...
+                  </span>
+                ) : (
+                  'Normal Voice Dictation'
+                )}
+              </h4>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isListening
+                  ? 'Speak freely — transcribing your voice in real time.'
+                  : 'Click the mic to speak or edit your transcript below.'}
+              </p>
+            </div>
+          </div>
+
+          {transcript && (
+            <button
+              onClick={() => {
+                setTranscript('');
+                setStructuredText('');
+                setConvertedScript('');
+                setActiveTab('raw');
+              }}
+              className="text-xs text-gray-400 hover:text-red-600 font-medium px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* View Tabs */}
+        <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
           <button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isTranscribing}
-            className={`relative flex items-center justify-center w-20 h-20 rounded-full transition-all duration-300 ${
-              isRecording
-                ? 'bg-red-600 text-white shadow-[0_0_30px_rgba(220,38,38,0.5)] animate-pulse'
-                : isTranscribing
-                ? 'bg-purple-300 text-white cursor-wait'
-                : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg active:scale-95'
+            onClick={() => setActiveTab('raw')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              activeTab === 'raw'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            {isTranscribing ? (
-              <Loader2 className="w-8 h-8 animate-spin" />
-            ) : isRecording ? (
-              <Square className="w-8 h-8 fill-current" />
-            ) : (
-              <Mic className="w-8 h-8" />
-            )}
+            <FileText className="w-3.5 h-3.5" />
+            <span>Spoken Transcript</span>
           </button>
 
-          <div className="mt-3 text-center">
-            <p className="text-sm font-semibold text-gray-800">
-              {isTranscribing
-                ? 'Transcribing & Structuring your voice with AI...'
-                : isRecording
-                ? `Recording voice (${recordingSeconds}s)... Click to stop & transcribe`
-                : 'Click microphone to speak your thoughts'}
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Speak naturally — Gemini listens to your audio and types the transcript & script.
-            </p>
-          </div>
+          {structuredText && (
+            <button
+              onClick={() => setActiveTab('structured')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                activeTab === 'structured'
+                  ? 'bg-purple-600 text-white'
+                  : 'text-purple-700 bg-purple-50 hover:bg-purple-100'
+              }`}
+            >
+              <AlignLeft className="w-3.5 h-3.5" />
+              <span>Structured Format</span>
+            </button>
+          )}
+
+          {convertedScript && (
+            <button
+              onClick={() => setActiveTab('converted')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                activeTab === 'converted'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Polished Script</span>
+            </button>
+          )}
         </div>
 
-        {/* Spoken Thoughts & Transcript */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" /> Spoken Transcript
-            </label>
-            <span className="text-xs text-gray-400">Editable</span>
+        {/* Active Content Body */}
+        {activeTab === 'raw' && (
+          <div>
+            <Textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              placeholder="Your spoken words appear here... You can also type or paste your spoken ideas directly."
+              rows={6}
+              className="text-sm font-sans"
+            />
           </div>
-          <Textarea
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Your spoken words will appear here... You can also type or paste your thoughts directly."
-            rows={4}
-          />
-        </div>
+        )}
 
-        {/* AI Structured Script Output */}
-        {structuredScript && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
-            <label className="text-xs font-semibold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> AI Structured Video Script
-            </label>
-            <div className="text-sm text-gray-800 font-serif whitespace-pre-wrap max-h-48 overflow-y-auto pr-2 bg-white/80 p-3 rounded-lg border border-emerald-100">
-              {structuredScript}
+        {activeTab === 'structured' && (
+          <div className="p-4 bg-purple-50/50 border border-purple-200 rounded-xl space-y-2">
+            <div className="flex items-center justify-between text-xs text-purple-900 font-semibold uppercase tracking-wider">
+              <span>Structured & Formatted (Original Words Preserved)</span>
+              <button
+                onClick={handleCopyCurrent}
+                className="text-purple-700 hover:text-purple-900 flex items-center gap-1 font-medium capitalize"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="text-sm text-gray-900 whitespace-pre-wrap max-h-56 overflow-y-auto p-3 bg-white rounded-lg border border-purple-100 font-sans leading-relaxed">
+              {structuredText}
             </div>
           </div>
         )}
 
+        {activeTab === 'converted' && (
+          <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2">
+            <div className="flex items-center justify-between text-xs text-emerald-900 font-semibold uppercase tracking-wider">
+              <span>Polished Video Script (Hook, Flow, CTA)</span>
+              <button
+                onClick={handleCopyCurrent}
+                className="text-emerald-700 hover:text-emerald-900 flex items-center gap-1 font-medium capitalize"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="text-sm text-gray-900 whitespace-pre-wrap max-h-56 overflow-y-auto p-3 bg-white rounded-lg border border-emerald-100 font-serif leading-relaxed">
+              {convertedScript}
+            </div>
+          </div>
+        )}
+
+        {/* Gemini Enhancement Options Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleStructureWithGemini}
+            disabled={!transcript.trim() || isProcessing}
+            className="p-3 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100/80 disabled:opacity-50 text-left transition-all flex items-start gap-3"
+          >
+            <div className="p-2 bg-purple-600 text-white rounded-lg flex-shrink-0 mt-0.5">
+              {isProcessing && processType === 'structure' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <AlignLeft className="w-4 h-4" />
+              )}
+            </div>
+            <div>
+              <h5 className="text-xs font-bold text-purple-950">✨ Structure with Gemini</h5>
+              <p className="text-[11px] text-purple-700 mt-0.5 leading-snug">
+                Cleans punctuation, headers & format without changing your words.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleConvertWithGemini}
+            disabled={!transcript.trim() || isProcessing}
+            className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 disabled:opacity-50 text-left transition-all flex items-start gap-3"
+          >
+            <div className="p-2 bg-emerald-600 text-white rounded-lg flex-shrink-0 mt-0.5">
+              {isProcessing && processType === 'convert' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Flame className="w-4 h-4" />
+              )}
+            </div>
+            <div>
+              <h5 className="text-xs font-bold text-emerald-950">⚡ Convert to Script with Gemini</h5>
+              <p className="text-[11px] text-emerald-700 mt-0.5 leading-snug">
+                Transforms rambling thoughts into a polished, high-converting video script.
+              </p>
+            </div>
+          </button>
+        </div>
+
         {/* Modal Bottom Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <Button
-            variant="secondary"
-            onClick={handleStructureScript}
-            disabled={!transcript.trim() || isStructuring || isTranscribing}
-            isLoading={isStructuring}
-            icon={<Sparkles className="w-4 h-4 text-purple-600" />}
-          >
-            Re-structure with AI
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
           </Button>
 
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleInsert}
-              disabled={(!transcript.trim() && !structuredScript.trim()) || isTranscribing}
-              icon={<Check className="w-4 h-4" />}
-            >
-              Insert into Editor
-            </Button>
-          </div>
+          <Button
+            onClick={handleInsert}
+            disabled={!transcript.trim() && !structuredText.trim() && !convertedScript.trim()}
+            icon={<Check className="w-4 h-4" />}
+          >
+            {activeTab === 'structured'
+              ? 'Insert Structured Text'
+              : activeTab === 'converted'
+              ? 'Insert Polished Script'
+              : 'Insert Transcript'}
+          </Button>
         </div>
       </div>
     </Modal>
