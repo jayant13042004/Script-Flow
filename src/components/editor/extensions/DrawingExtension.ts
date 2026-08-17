@@ -17,7 +17,9 @@ export const DrawingExtension = Node.create({
 
   atom: true,
 
-  draggable: true,
+  draggable: false,
+
+  selectable: false,
 
   addAttributes() {
     return {
@@ -46,7 +48,9 @@ export const DrawingExtension = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(DrawingNode);
+    return ReactNodeViewRenderer(DrawingNode, {
+      stopEvent: () => true,
+    });
   },
 
   addCommands() {
@@ -54,10 +58,15 @@ export const DrawingExtension = Node.create({
       insertDrawing:
         () =>
         ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: { dataUrl: '' },
-          });
+          return commands.insertContent([
+            {
+              type: this.name,
+              attrs: { dataUrl: '' },
+            },
+            {
+              type: 'paragraph',
+            },
+          ]);
         },
     };
   },

@@ -211,8 +211,15 @@ export function DrawingNode(props: NodeViewProps) {
   };
 
   return (
-    <NodeViewWrapper className="my-4" contentEditable={false} data-drag-handle="false">
-      <div className="border-2 border-dashed border-gray-300 hover:border-purple-300 rounded-2xl overflow-hidden bg-white shadow-sm transition-colors">
+    <NodeViewWrapper
+      className="my-4 select-none"
+      contentEditable={false}
+      draggable={false}
+      data-drag-handle="false"
+      onDragStart={(e: any) => e.preventDefault()}
+      onClick={(e: any) => e.stopPropagation()}
+    >
+      <div className="border-2 border-dashed border-gray-300 hover:border-purple-300 rounded-2xl overflow-hidden bg-white shadow-sm transition-colors select-none">
         {/* Inline Toolbar Header */}
         <div className="p-2 bg-gray-50/90 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs select-none">
           <div className="flex items-center gap-2">
