@@ -105,6 +105,34 @@ export default function EditorPage() {
   const [structure, setStructure] = useState<ScriptSection[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Resizable sidebar width
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const saved = localStorage.getItem('scriptflow_sidebar_width');
+    return saved ? Math.max(320, Math.min(850, Number(saved))) : 420;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsResizing(true);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = window.innerWidth - moveEvent.clientX;
+      const clampedWidth = Math.max(320, Math.min(window.innerWidth - 360, Math.min(850, newWidth)));
+      setSidebarWidth(clampedWidth);
+      localStorage.setItem('scriptflow_sidebar_width', String(clampedWidth));
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, []);
+
   // Initialize TipTap editor
   const editor = useEditor({
     extensions: [
@@ -541,7 +569,21 @@ export default function EditorPage() {
 
         {/* Side Panel */}
         {activePanel && (
-          <aside className="w-[400px] flex-shrink-0 border-l border-gray-200 bg-gray-50 h-[calc(100vh-7.5rem-2.5rem)] sticky top-[7.5rem] flex flex-col animate-slide-in-right no-print overflow-hidden">
+          <aside
+            style={{ width: `${sidebarWidth}px` }}
+            className={`relative flex-shrink-0 border-l border-gray-200 bg-gray-50 h-[calc(100vh-7.5rem-2.5rem)] sticky top-[7.5rem] flex flex-col no-print overflow-hidden ${
+              isResizing ? 'select-none' : 'transition-[width] duration-75'
+            }`}
+          >
+            {/* Draggable Resize Handle (Left Edge) */}
+            <div
+              onMouseDown={startResizing}
+              className="absolute left-0 top-0 bottom-0 w-2.5 -translate-x-1/2 cursor-col-resize z-40 group flex items-center justify-center hover:bg-blue-500/10 transition-colors"
+              title="Drag to resize sidebar width"
+            >
+              <div className="w-1 h-8 rounded-full bg-gray-300 group-hover:bg-blue-500 transition-colors shadow-xs" />
+            </div>
+
             {activePanel === 'ai' && (
               <AiPanel
                 isOpen={true}

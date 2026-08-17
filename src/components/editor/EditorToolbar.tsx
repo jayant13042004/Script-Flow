@@ -122,17 +122,7 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
                 key={size.value}
                 type="button"
                 onClick={() => {
-                  const { empty, $from } = editor.state.selection;
-                  if (empty && $from.parent && $from.parent.textContent) {
-                    editor
-                      .chain()
-                      .focus()
-                      .setTextSelection({ from: $from.start(), to: $from.end() })
-                      .setFontSize(size.value)
-                      .run();
-                  } else {
-                    editor.chain().focus().setFontSize(size.value).run();
-                  }
+                  editor.chain().focus().setFontSize(size.value).run();
                   setShowFontSizePicker(false);
                 }}
                 className={`w-full text-left px-2 py-1.5 text-xs rounded-lg flex items-center justify-between transition-colors ${
