@@ -32,7 +32,6 @@ import { TeleprompterModal } from '../components/teleprompter/TeleprompterModal'
 import { ExportModal } from '../components/editor/ExportModal';
 import { ImportModal } from '../components/editor/ImportModal';
 import { ShareModal } from '../components/share/ShareModal';
-import { AudioRecorder } from '../components/audio/AudioRecorder';
 import { ScriptStatusBadge, ScriptStatus } from '../components/dashboard/ScriptStatusBadge';
 import { ScriptAnalyticsModal } from '../components/dashboard/ScriptAnalyticsModal';
 import { VideoIdeasModal } from '../components/ai/VideoIdeasModal';
@@ -99,7 +98,6 @@ export default function EditorPage() {
   const [showTranslatorModal, setShowTranslatorModal] = useState(false);
   const [showShortExtractorModal, setShowShortExtractorModal] = useState(false);
   const [showHandwritingModal, setShowHandwritingModal] = useState(false);
-  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [currentScriptObj, setCurrentScriptObj] = useState<any>(null);
@@ -418,7 +416,6 @@ export default function EditorPage() {
             {/* Consolidated Studio Tools Dropdown */}
             <StudioToolsDropdown
               onOpenTeleprompter={() => setShowTeleprompter(true)}
-              onToggleAudioRecorder={() => setShowAudioRecorder(!showAudioRecorder)}
               onOpenThumbnails={() => setShowThumbnailModal(true)}
               onOpenYoutubeMetadata={() => setShowYoutubeModal(true)}
               onOpenSponsorBlock={() => setShowSponsorModal(true)}
@@ -430,7 +427,6 @@ export default function EditorPage() {
               onOpenAnalytics={() => setShowAnalyticsModal(true)}
               onOpenExport={() => setShowExportModal(true)}
               onOpenImport={() => setShowImportModal(true)}
-              isAudioRecordingActive={showAudioRecorder}
             />
 
             {/* Panel toggles */}
@@ -545,7 +541,7 @@ export default function EditorPage() {
 
         {/* Side Panel */}
         {activePanel && (
-          <aside className="w-[400px] flex-shrink-0 border-l border-gray-200 bg-gray-50 h-[calc(100vh-7.5rem)] sticky top-[7.5rem] overflow-y-auto animate-slide-in-right no-print">
+          <aside className="w-[400px] flex-shrink-0 border-l border-gray-200 bg-gray-50 h-[calc(100vh-7.5rem-2.5rem)] sticky top-[7.5rem] flex flex-col animate-slide-in-right no-print overflow-hidden">
             {activePanel === 'ai' && (
               <AiPanel
                 isOpen={true}
@@ -666,17 +662,6 @@ export default function EditorPage() {
           )}
         </div>
       </Modal>
-
-      {/* Audio Voice Recorder Drawer */}
-      {showAudioRecorder && (
-        <div className="fixed bottom-12 right-6 z-40 w-96 shadow-2xl rounded-2xl overflow-hidden animate-slide-in-up no-print">
-          <AudioRecorder
-            onSaveAudio={(url, name) => {
-              console.log('Audio recorded:', url, name);
-            }}
-          />
-        </div>
-      )}
 
       {/* Voice Mode Dictation Modal */}
       <VoiceScriptModal

@@ -146,7 +146,7 @@ export const RepurposePanel: React.FC<RepurposePanelProps> = ({ isOpen, onClose,
       </div>
 
       {!result && (
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="p-4 border-t border-gray-200 bg-white shrink-0 shadow-xs">
           <Button 
             className="w-full" 
             disabled={!selectedFormat || !scriptContent.trim() || isLoading}
