@@ -43,6 +43,7 @@ import { ShortExtractorModal } from '../components/studio/ShortExtractorModal';
 import { HandwritingModal } from '../components/studio/HandwritingModal';
 import { StudioToolsDropdown } from '../components/studio/StudioToolsDropdown';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
+import { markdownToHtml, isMarkdownText } from '../lib/markdown';
 import { Mic, Tv, Share2, Upload, Volume2, BarChart2, Layers } from 'lucide-react';
 
 import { useEditorStore } from '../stores/editorStore';
@@ -173,6 +174,17 @@ export default function EditorPage() {
       attributes: {
         class: 'tiptap-editor',
       },
+      handlePaste: (_view, event) => {
+        const text = event.clipboardData?.getData('text/plain');
+        if (text && isMarkdownText(text)) {
+          const html = markdownToHtml(text);
+          if (editor) {
+            editor.commands.insertContent(html);
+            return true;
+          }
+        }
+        return false;
+      },
     },
   });
 
@@ -268,15 +280,19 @@ export default function EditorPage() {
   const handleAiReplace = useCallback((text: string) => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
+    const formatted = isMarkdownText(text) ? markdownToHtml(text) : text;
     if (from !== to) {
-      editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, text).run();
+      editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, formatted).run();
+    } else {
+      editor.chain().focus().insertContent(formatted).run();
     }
   }, [editor]);
 
   const handleAiInsert = useCallback((text: string) => {
     if (!editor) return;
+    const formatted = isMarkdownText(text) ? markdownToHtml(text) : text;
     const { to } = editor.state.selection;
-    editor.chain().focus().insertContentAt(to, '\n' + text).run();
+    editor.chain().focus().insertContentAt(to, formatted).run();
   }, [editor]);
 
   // Hook insert handler
@@ -284,7 +300,8 @@ export default function EditorPage() {
     if (!editor) return;
     // Insert at cursor position or at the beginning
     const pos = editor.state.selection.from;
-    editor.chain().focus().insertContentAt(pos, text + '\n\n').run();
+    const formatted = isMarkdownText(text) ? markdownToHtml(text) : text + '\n\n';
+    editor.chain().focus().insertContentAt(pos, formatted).run();
   }, [editor]);
 
   // AI Generate handler
@@ -300,12 +317,13 @@ export default function EditorPage() {
       content += '\n\n' + result.cta;
     }
 
+    const formatted = markdownToHtml(content);
     // Insert at current cursor or replace all
     if (editor.getText().trim().length === 0) {
-      editor.commands.setContent(`<p>${content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`);
+      editor.commands.setContent(formatted);
     } else {
       const pos = editor.state.selection.from;
-      editor.chain().focus().insertContentAt(pos, content).run();
+      editor.chain().focus().insertContentAt(pos, formatted).run();
     }
     setShowGenerateModal(false);
   }, [editor]);

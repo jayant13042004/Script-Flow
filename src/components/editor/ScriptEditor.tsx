@@ -7,6 +7,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import TextAlign from '@tiptap/extension-text-align';
 import { useEditorStore } from '../../stores/editorStore';
+import { markdownToHtml, isMarkdownText } from '../../lib/markdown';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorStats } from './EditorStats';
 import { FindReplace } from './FindReplace';
@@ -60,6 +61,17 @@ export function ScriptEditor({ initialContent, onUpdate }: ScriptEditorProps) {
     editorProps: {
       attributes: {
         class: 'tiptap-editor prose prose-stone lg:prose-lg mx-auto focus:outline-none min-h-[500px] font-serif',
+      },
+      handlePaste: (_view, event) => {
+        const text = event.clipboardData?.getData('text/plain');
+        if (text && isMarkdownText(text)) {
+          const html = markdownToHtml(text);
+          if (editor) {
+            editor.commands.insertContent(html);
+            return true;
+          }
+        }
+        return false;
       },
     },
   });
