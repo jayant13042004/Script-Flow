@@ -422,7 +422,7 @@ export default function EditorPage() {
               onOpenTranslator={() => setShowTranslatorModal(true)}
               onOpenShortExtractor={() => setShowShortExtractorModal(true)}
               onOpenHandwriting={() => setShowHandwritingModal(true)}
-              onInsertInlineDrawing={() => (editor?.chain().focus() as any).insertDrawing()}
+              onInsertInlineDrawing={() => (editor?.chain().focus() as any).insertDrawing().run()}
               onOpenShareModal={() => setShowShareModal(true)}
               onOpenAnalytics={() => setShowAnalyticsModal(true)}
               onOpenExport={() => setShowExportModal(true)}

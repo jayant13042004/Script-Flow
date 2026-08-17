@@ -53,13 +53,11 @@ export const DrawingExtension = Node.create({
     return {
       insertDrawing:
         () =>
-        ({ chain }) => {
-          return chain()
-            .insertContent({
-              type: this.name,
-              attrs: { dataUrl: '' },
-            })
-            .run();
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: { dataUrl: '' },
+          });
         },
     };
   },

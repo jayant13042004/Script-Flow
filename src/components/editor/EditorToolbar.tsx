@@ -348,7 +348,7 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
       <button
         type="button"
         onClick={() => {
-          (editor.chain().focus() as any).insertDrawing();
+          (editor.chain().focus() as any).insertDrawing().run();
         }}
         className="p-1.5 rounded-md flex items-center gap-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
         title="Insert Handwriting Canvas directly in script (OneNote style)"

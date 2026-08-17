@@ -211,10 +211,10 @@ export function DrawingNode(props: NodeViewProps) {
   };
 
   return (
-    <NodeViewWrapper className="my-4 user-select-none">
+    <NodeViewWrapper className="my-4" contentEditable={false} data-drag-handle="false">
       <div className="border-2 border-dashed border-gray-300 hover:border-purple-300 rounded-2xl overflow-hidden bg-white shadow-sm transition-colors">
         {/* Inline Toolbar Header */}
-        <div className="p-2 bg-gray-50/90 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="p-2 bg-gray-50/90 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs select-none">
           <div className="flex items-center gap-2">
             <span className="font-bold text-gray-700 flex items-center gap-1">
               <PenTool className="w-3.5 h-3.5 text-purple-600" />
