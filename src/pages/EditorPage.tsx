@@ -15,6 +15,7 @@ import CharacterCount from '@tiptap/extension-character-count';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontSize } from '../components/editor/extensions/FontSize';
+import { DrawingExtension } from '../components/editor/extensions/DrawingExtension';
 
 import { EditorToolbar } from '../components/editor/EditorToolbar';
 import { EditorStats } from '../components/editor/EditorStats';
@@ -115,6 +116,7 @@ export default function EditorPage() {
       Underline,
       TextStyle,
       FontSize,
+      DrawingExtension,
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({
         placeholder: 'Start writing your script...',
@@ -423,6 +425,7 @@ export default function EditorPage() {
               onOpenTranslator={() => setShowTranslatorModal(true)}
               onOpenShortExtractor={() => setShowShortExtractorModal(true)}
               onOpenHandwriting={() => setShowHandwritingModal(true)}
+              onInsertInlineDrawing={() => (editor?.chain().focus() as any).insertDrawing()}
               onOpenShareModal={() => setShowShareModal(true)}
               onOpenAnalytics={() => setShowAnalyticsModal(true)}
               onOpenExport={() => setShowExportModal(true)}

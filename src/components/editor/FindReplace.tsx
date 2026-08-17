@@ -22,42 +22,62 @@ export function FindReplace({ editor, isOpen, onClose }: FindReplaceProps) {
     }
   }, [isOpen]);
 
-  useEffect(() => {
+  // Find all exact ProseMirror match ranges
+  const findMatches = () => {
     if (!editor || !isOpen || !searchTerm.trim()) {
       setMatches([]);
       setCurrentIndex(-1);
-      return;
+      return [];
     }
 
-    const text = editor.getText();
     const newMatches: { from: number; to: number }[] = [];
+    const search = searchTerm.toLowerCase();
 
-    const lowerText = text.toLowerCase();
-    const lowerSearch = searchTerm.toLowerCase();
-    let index = lowerText.indexOf(lowerSearch, 0);
-
-    while (index !== -1) {
-      newMatches.push({ from: index, to: index + searchTerm.length });
-      index = lowerText.indexOf(lowerSearch, index + 1);
+    try {
+      editor.state.doc.descendants((node, pos) => {
+        if (node.isText && node.text) {
+          const text = node.text.toLowerCase();
+          let index = text.indexOf(search);
+          while (index !== -1) {
+            newMatches.push({
+              from: pos + index,
+              to: pos + index + search.length,
+            });
+            index = text.indexOf(search, index + 1);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Error finding matches:', e);
     }
 
     setMatches(newMatches);
     if (newMatches.length > 0) {
       setCurrentIndex(0);
+      highlightMatch(newMatches, 0);
     } else {
       setCurrentIndex(-1);
     }
-  }, [searchTerm, editor, isOpen]);
+    return newMatches;
+  };
 
-  const highlightMatch = (index: number) => {
-    if (!editor || matches.length === 0 || index < 0 || index >= matches.length) return;
-    const match = matches[index];
-    // Set selection in TipTap editor (+1 for TipTap 1-indexed doc offset)
+  useEffect(() => {
+    findMatches();
+  }, [searchTerm, isOpen]);
+
+  const highlightMatch = (matchList: { from: number; to: number }[], index: number) => {
+    if (!editor || matchList.length === 0 || index < 0 || index >= matchList.length) return;
+    const match = matchList[index];
+
     try {
-      editor.commands.setTextSelection({ from: match.from + 1, to: match.to + 1 });
-      editor.commands.scrollIntoView();
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: match.from, to: match.to })
+        .scrollIntoView()
+        .run();
     } catch (e) {
-      // Fallback
+      console.warn('Error highlighting match:', e);
     }
   };
 
@@ -65,14 +85,14 @@ export function FindReplace({ editor, isOpen, onClose }: FindReplaceProps) {
     if (matches.length === 0) return;
     const nextIndex = (currentIndex + 1) % matches.length;
     setCurrentIndex(nextIndex);
-    highlightMatch(nextIndex);
+    highlightMatch(matches, nextIndex);
   };
 
   const handlePrev = () => {
     if (matches.length === 0) return;
     const prevIndex = (currentIndex - 1 + matches.length) % matches.length;
     setCurrentIndex(prevIndex);
-    highlightMatch(prevIndex);
+    highlightMatch(matches, prevIndex);
   };
 
   const handleReplaceCurrent = () => {
@@ -83,12 +103,14 @@ export function FindReplace({ editor, isOpen, onClose }: FindReplaceProps) {
       editor
         .chain()
         .focus()
-        .setTextSelection({ from: match.from + 1, to: match.to + 1 })
+        .setTextSelection({ from: match.from, to: match.to })
         .insertContent(replaceTerm)
         .run();
 
-      // Trigger search refresh
-      setSearchTerm((s) => s);
+      // Refresh matches after replacement
+      setTimeout(() => {
+        findMatches();
+      }, 50);
     } catch (err) {
       console.warn('Replace error:', err);
     }
@@ -125,7 +147,7 @@ export function FindReplace({ editor, isOpen, onClose }: FindReplaceProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="sticky top-[3.5rem] z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md px-4 py-2.5 flex items-center justify-between gap-4 max-w-4xl mx-auto w-full rounded-b-xl animate-in slide-in-from-top-1 duration-150">
+    <div className="sticky top-[3.5rem] z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 max-w-4xl mx-auto w-full rounded-b-xl animate-in slide-in-from-top-1 duration-150">
       <div className="flex flex-wrap items-center gap-3 flex-1">
         {/* Find Input */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -173,38 +195,46 @@ export function FindReplace({ editor, isOpen, onClose }: FindReplaceProps) {
             placeholder="Replace with..."
             value={replaceTerm}
             onChange={(e) => setReplaceTerm(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleReplaceCurrent();
+              }
+            }}
             className="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
           />
         </div>
 
-        {/* Replace Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handleReplaceCurrent}
             disabled={matches.length === 0 || currentIndex === -1}
-            className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-lg font-medium disabled:opacity-40 transition-colors flex items-center gap-1"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-30 transition-colors"
+            title="Replace current match"
           >
-            <Replace className="w-3.5 h-3.5" />
+            <Replace className="w-3 h-3" />
             <span>Replace</span>
           </button>
           <button
             type="button"
             onClick={handleReplaceAll}
-            disabled={matches.length === 0}
-            className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-lg font-medium disabled:opacity-40 transition-colors flex items-center gap-1"
+            disabled={!searchTerm.trim()}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-30 transition-colors"
+            title="Replace all occurrences"
           >
-            <ReplaceAll className="w-3.5 h-3.5" />
-            <span>Replace All</span>
+            <ReplaceAll className="w-3 h-3" />
+            <span>All</span>
           </button>
         </div>
       </div>
 
-      {/* Close button */}
       <button
+        type="button"
         onClick={onClose}
         className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        title="Close (Esc)"
       >
         <X className="w-4 h-4" />
       </button>

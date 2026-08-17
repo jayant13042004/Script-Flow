@@ -14,6 +14,7 @@ interface StudioToolsDropdownProps {
   onOpenTranslator: () => void;
   onOpenShortExtractor: () => void;
   onOpenHandwriting?: () => void;
+  onInsertInlineDrawing?: () => void;
   onOpenShareModal: () => void;
   onOpenAnalytics: () => void;
   onOpenExport: () => void;
@@ -30,6 +31,7 @@ export function StudioToolsDropdown({
   onOpenTranslator,
   onOpenShortExtractor,
   onOpenHandwriting,
+  onInsertInlineDrawing,
   onOpenShareModal,
   onOpenAnalytics,
   onOpenExport,
@@ -96,14 +98,25 @@ export function StudioToolsDropdown({
             <span>Voice / Audio Recorder</span>
           </button>
 
+          {onInsertInlineDrawing && (
+            <button
+              type="button"
+              onClick={() => handleAction(onInsertInlineDrawing)}
+              className="w-full text-left px-2.5 py-1.5 text-xs text-purple-700 hover:bg-purple-50 rounded-lg flex items-center gap-2.5 transition-colors font-semibold"
+            >
+              <PenTool className="w-4 h-4 text-purple-600" />
+              <span>Draw / Handwrite in Script</span>
+            </button>
+          )}
+
           {onOpenHandwriting && (
             <button
               type="button"
               onClick={() => handleAction(onOpenHandwriting)}
               className="w-full text-left px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2.5 transition-colors font-medium"
             >
-              <PenTool className="w-4 h-4 text-purple-600" />
-              <span>Handwriting & Sketch Pad</span>
+              <PenTool className="w-4 h-4 text-gray-500" />
+              <span>Standalone Handwriting Pad</span>
             </button>
           )}
 

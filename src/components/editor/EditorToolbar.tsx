@@ -95,7 +95,7 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
     <div className="w-[1px] h-5 bg-gray-200 mx-1 self-center" />
   );
 
-  const currentFontSize = editor.getAttributes('textStyle').fontSize || '16px';
+  const currentFontSize = editor.getAttributes('fontSize').size || '16px';
 
   return (
     <div className="relative z-10 flex flex-wrap items-center gap-0.5 px-4 py-1.5 bg-white border-t border-gray-100">
@@ -332,12 +332,27 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
         title="Find & Replace (Ctrl+F)"
       />
 
-      {/* Handwriting / Sketch Pen Tool */}
+      <Separator />
+
+      {/* 1. Insert Inline Drawing / Handwriting directly into Script */}
+      <button
+        type="button"
+        onClick={() => {
+          (editor.chain().focus() as any).insertDrawing();
+        }}
+        className="p-1.5 rounded-md flex items-center gap-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+        title="Insert Handwriting Canvas directly in script (OneNote style)"
+      >
+        <PenTool className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Handwrite in Script</span>
+      </button>
+
+      {/* 2. Standalone Handwriting Pad Modal */}
       {onOpenHandwriting && (
         <ToolbarButton
           onClick={onOpenHandwriting}
           icon={PenTool}
-          title="Write with Pen (Handwriting & Sketch Pad)"
+          title="Open Standalone Handwriting Pad"
         />
       )}
     </div>
