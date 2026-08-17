@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import {
   PenTool, Eraser, RotateCcw, RotateCw, Trash2, Sparkles,
-  Check, Lock, Unlock, AlertCircle
+  Check, Edit3, AlertCircle, Eye
 } from 'lucide-react';
 import { getAiService } from '../../../services/ai';
 
@@ -15,12 +15,14 @@ const PEN_COLORS = [
 ];
 
 export function DrawingNode(props: NodeViewProps) {
+  const isNormalView = Boolean(props.node.attrs.isNormalView);
+  const dataUrl = props.node.attrs.dataUrl || '';
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [penColor, setPenColor] = useState('#111827');
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [isEraser, setIsEraser] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
 
   const [history, setHistory] = useState<string[]>([]);
   const [historyStep, setHistoryStep] = useState<number>(-1);
@@ -30,6 +32,8 @@ export function DrawingNode(props: NodeViewProps) {
 
   // Initialize and load saved drawing
   useEffect(() => {
+    if (isNormalView) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -47,30 +51,30 @@ export function DrawingNode(props: NodeViewProps) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    if (props.node.attrs.dataUrl) {
+    if (dataUrl) {
       const img = new window.Image();
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/png');
-        setHistory([dataUrl]);
+        const currentData = canvas.toDataURL('image/png');
+        setHistory([currentData]);
         setHistoryStep(0);
       };
-      img.src = props.node.attrs.dataUrl;
+      img.src = dataUrl;
     } else {
-      const dataUrl = canvas.toDataURL('image/png');
-      setHistory([dataUrl]);
+      const currentData = canvas.toDataURL('image/png');
+      setHistory([currentData]);
       setHistoryStep(0);
     }
-  }, []);
+  }, [isNormalView]);
 
   const saveCanvasToNode = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    props.updateAttributes({ dataUrl });
+    const currentData = canvas.toDataURL('image/png');
+    props.updateAttributes({ dataUrl: currentData });
 
     const newHistory = history.slice(0, historyStep + 1);
-    newHistory.push(dataUrl);
+    newHistory.push(currentData);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
   };
@@ -138,7 +142,6 @@ export function DrawingNode(props: NodeViewProps) {
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (isLocked) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -155,7 +158,7 @@ export function DrawingNode(props: NodeViewProps) {
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || isLocked) return;
+    if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -172,23 +175,31 @@ export function DrawingNode(props: NodeViewProps) {
     saveCanvasToNode();
   };
 
+  const handleFinishAndKeepNormal = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const currentData = canvas.toDataURL('image/png');
+      props.updateAttributes({ dataUrl: currentData, isNormalView: true });
+    } else {
+      props.updateAttributes({ isNormalView: true });
+    }
+  };
+
   // Convert to Text via Gemini AI and replace this block
   const handleConvertToText = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const sourceData = dataUrl || (canvasRef.current ? canvasRef.current.toDataURL('image/png') : '');
+    if (!sourceData) return;
 
     setIsConverting(true);
     setError(null);
 
     try {
-      const dataUrl = canvas.toDataURL('image/png');
       const ai = getAiService();
       if (ai.convertHandwritingToText) {
-        const res = await ai.convertHandwritingToText({ imageBase64: dataUrl });
+        const res = await ai.convertHandwritingToText({ imageBase64: sourceData });
         const text = res.recognizedText;
 
         if (text && text.trim()) {
-          // Replace this node with paragraph text
           const pos = props.getPos();
           if (typeof pos === 'number') {
             const html = `<p>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`;
@@ -210,6 +221,67 @@ export function DrawingNode(props: NodeViewProps) {
     }
   };
 
+  // NORMAL VIEW MODE (Box removed, looks like seamless handwritten script on page)
+  if (isNormalView) {
+    return (
+      <NodeViewWrapper
+        className="my-3 relative group select-none"
+        contentEditable={false}
+        draggable={false}
+        onClick={(e: any) => e.stopPropagation()}
+      >
+        <div className="relative rounded-xl overflow-hidden py-1">
+          {dataUrl ? (
+            <img
+              src={dataUrl}
+              alt="Handwritten script note"
+              className="w-full max-h-72 object-contain bg-transparent block"
+              draggable={false}
+            />
+          ) : (
+            <div className="p-4 text-xs text-gray-400 italic text-center border border-dashed border-gray-200 rounded-xl">
+              Empty handwritten note. Click below to edit.
+            </div>
+          )}
+
+          {/* Floating Action Controls on Hover */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg p-1 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => props.updateAttributes({ isNormalView: false })}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Edit handwriting"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Edit Drawing</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleConvertToText}
+              disabled={isConverting}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              title="Convert to typed text with AI"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              <span>{isConverting ? 'Reading...' : 'Convert to Text'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.deleteNode}
+              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  // DRAWING / EDITING MODE (With canvas & drawing tools)
   return (
     <NodeViewWrapper
       className="my-4 select-none"
@@ -219,71 +291,68 @@ export function DrawingNode(props: NodeViewProps) {
       onDragStart={(e: any) => e.preventDefault()}
       onClick={(e: any) => e.stopPropagation()}
     >
-      <div className="border-2 border-dashed border-gray-300 hover:border-purple-300 rounded-2xl overflow-hidden bg-white shadow-sm transition-colors select-none">
+      <div className="border-2 border-dashed border-purple-200 hover:border-purple-300 rounded-2xl overflow-hidden bg-white shadow-sm transition-colors select-none">
         {/* Inline Toolbar Header */}
-        <div className="p-2 bg-gray-50/90 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs select-none">
+        <div className="p-2 bg-purple-50/70 border-b border-purple-100 flex flex-wrap items-center justify-between gap-2 text-xs select-none">
           <div className="flex items-center gap-2">
             <span className="font-bold text-gray-700 flex items-center gap-1">
               <PenTool className="w-3.5 h-3.5 text-purple-600" />
-              <span>Handwriting / Sketch</span>
+              <span>Handwriting Pad</span>
             </span>
 
-            {!isLocked && (
-              <>
-                <div className="h-4 w-[1px] bg-gray-300 mx-0.5" />
-                {/* Pen vs Eraser */}
-                <button
-                  type="button"
-                  onClick={() => setIsEraser(false)}
-                  className={`p-1 rounded-md ${!isEraser ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
-                  title="Pen"
-                >
-                  <PenTool className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEraser(true)}
-                  className={`p-1 rounded-md ${isEraser ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
-                  title="Eraser"
-                >
-                  <Eraser className="w-3.5 h-3.5" />
-                </button>
+            <div className="h-4 w-[1px] bg-purple-200 mx-0.5" />
 
-                {/* Colors */}
-                {!isEraser && (
-                  <div className="flex items-center gap-1 ml-1">
-                    {PEN_COLORS.map((c) => (
-                      <button
-                        key={c.color}
-                        type="button"
-                        onClick={() => setPenColor(c.color)}
-                        className={`w-4 h-4 rounded-full transition-transform ${penColor === c.color ? 'scale-125 ring-2 ring-gray-400' : 'hover:scale-110'}`}
-                        style={{ backgroundColor: c.color }}
-                        title={c.name}
-                      />
-                    ))}
-                  </div>
-                )}
+            {/* Pen vs Eraser */}
+            <button
+              type="button"
+              onClick={() => setIsEraser(false)}
+              className={`p-1 rounded-md ${!isEraser ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-purple-100'}`}
+              title="Pen"
+            >
+              <PenTool className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEraser(true)}
+              className={`p-1 rounded-md ${isEraser ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-purple-100'}`}
+              title="Eraser"
+            >
+              <Eraser className="w-3.5 h-3.5" />
+            </button>
 
-                <button
-                  type="button"
-                  onClick={handleUndo}
-                  disabled={historyStep <= 0}
-                  className="p-1 text-gray-500 hover:text-gray-900 disabled:opacity-30 ml-1"
-                  title="Undo"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="p-1 text-red-500 hover:text-red-700 ml-1"
-                  title="Clear"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </>
+            {/* Colors */}
+            {!isEraser && (
+              <div className="flex items-center gap-1 ml-1">
+                {PEN_COLORS.map((c) => (
+                  <button
+                    key={c.color}
+                    type="button"
+                    onClick={() => setPenColor(c.color)}
+                    className={`w-4 h-4 rounded-full transition-transform ${penColor === c.color ? 'scale-125 ring-2 ring-purple-400' : 'hover:scale-110'}`}
+                    style={{ backgroundColor: c.color }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
             )}
+
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={historyStep <= 0}
+              className="p-1 text-gray-500 hover:text-gray-900 disabled:opacity-30 ml-1"
+              title="Undo"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="p-1 text-red-500 hover:text-red-700 ml-1"
+              title="Clear"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -292,21 +361,22 @@ export function DrawingNode(props: NodeViewProps) {
               type="button"
               onClick={handleConvertToText}
               disabled={isConverting}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 bg-white border border-purple-200 hover:bg-purple-100 rounded-lg transition-colors"
               title="Convert this handwriting to editable text using AI"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span>{isConverting ? 'Reading...' : 'Convert to Text via AI'}</span>
+              <span>{isConverting ? 'Reading...' : 'Convert to Text'}</span>
             </button>
 
-            {/* Lock / Toggle */}
+            {/* Finish & Keep Normal (Removes box) */}
             <button
               type="button"
-              onClick={() => setIsLocked(!isLocked)}
-              className={`p-1 rounded-md ${isLocked ? 'bg-amber-100 text-amber-800' : 'text-gray-500 hover:bg-gray-200'}`}
-              title={isLocked ? 'Unlock to draw' : 'Lock drawing'}
+              onClick={handleFinishAndKeepNormal}
+              className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-2xs"
+              title="Keep handwritten note as normal script (removes box and tools)"
             >
-              {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              <Check className="w-3.5 h-3.5" />
+              <span>Keep as Normal Script</span>
             </button>
 
             {/* Delete Node */}
@@ -328,7 +398,7 @@ export function DrawingNode(props: NodeViewProps) {
           </div>
         )}
 
-        {/* Canvas */}
+        {/* Drawing Canvas */}
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -338,7 +408,7 @@ export function DrawingNode(props: NodeViewProps) {
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          className={`w-full h-60 touch-none select-none block bg-white ${isLocked ? 'cursor-default' : 'cursor-crosshair'}`}
+          className="w-full h-60 touch-none select-none block bg-white cursor-crosshair"
           style={{ width: '100%', height: '240px' }}
         />
       </div>

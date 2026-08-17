@@ -32,6 +32,15 @@ export const DrawingExtension = Node.create({
           };
         },
       },
+      isNormalView: {
+        default: false,
+        parseHTML: element => element.getAttribute('data-normal') === 'true',
+        renderHTML: attributes => {
+          return {
+            'data-normal': attributes.isNormalView ? 'true' : 'false',
+          };
+        },
+      },
     };
   },
 
@@ -61,7 +70,7 @@ export const DrawingExtension = Node.create({
           return commands.insertContent([
             {
               type: this.name,
-              attrs: { dataUrl: '' },
+              attrs: { dataUrl: '', isNormalView: false },
             },
             {
               type: 'paragraph',
