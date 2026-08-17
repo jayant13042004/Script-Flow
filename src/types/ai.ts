@@ -135,10 +135,13 @@ export interface TranscribeAudioResponse {
   structuredScript: string;
 }
 
+export type AiPerformanceMode = 'fast' | 'quality';
+
 export interface ImproveTextParams {
   selectedText: string;
   instruction: string;
   fullScriptContext: string;
+  mode?: AiPerformanceMode;
 }
 
 export interface GenerateScriptParams {
@@ -149,17 +152,20 @@ export interface GenerateScriptParams {
   tone: Tone;
   language: string;
   customInstructions?: string;
+  mode?: AiPerformanceMode;
 }
 
 export interface RepurposeParams {
   scriptContent: string;
   targetFormat: RepurposeFormat;
   scriptTitle: string;
+  mode?: AiPerformanceMode;
 }
 
 export interface AskParams {
   question: string;
   scriptContext: string;
+  mode?: AiPerformanceMode;
 }
 
 export interface AiTextResponse {

@@ -62,21 +62,22 @@ export class GeminiAiService implements AiService {
     this.fallbackService = new MockAiService();
   }
 
-  private async callGemini(prompt: string, jsonMode: boolean = false): Promise<string> {
+  private async callGemini(
+    prompt: string,
+    jsonMode: boolean = false,
+    mode: 'fast' | 'quality' = 'quality'
+  ): Promise<string> {
     if (!this.apiKey) {
       console.warn('Gemini API key is not configured. Falling back to mock AI service.');
       return '';
     }
 
-    // Supported active production models (primary to cost-effective/reasoning fallbacks)
-    const modelsToTry = [
-      this.modelName,
-      'gemini-3.6-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-pro',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash'
-    ].filter((value, index, self) => self.indexOf(value) === index); // unique array
+    // Supported active production models based on mode
+    const fastModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    const qualityModels = [this.modelName, 'gemini-3.6-flash', 'gemini-3.1-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+
+    const modelsToTry = (mode === 'fast' ? fastModels : qualityModels)
+      .filter((value, index, self) => self.indexOf(value) === index);
 
     for (const model of modelsToTry) {
       try {
@@ -89,7 +90,8 @@ export class GeminiAiService implements AiService {
             }
           ],
           generationConfig: {
-            temperature: 0.7,
+            temperature: mode === 'fast' ? 0.4 : 0.7,
+            maxOutputTokens: mode === 'fast' ? 2048 : 4096,
           }
         };
 
@@ -135,7 +137,7 @@ CRITICAL RULES:
 2. Maintain natural creator tone, high retention, and engaging pacing.
 3. Return ONLY the revised text. Do NOT include quotes, preambles, markdown code blocks, or extra commentary.`;
 
-    const resultText = await this.callGemini(prompt);
+    const resultText = await this.callGemini(prompt, false, params.mode || 'quality');
     if (!resultText) {
       return this.fallbackService.improveText(params);
     }
@@ -176,7 +178,7 @@ Output JSON Schema:
   "cta": "strong call to action text"
 }`;
 
-    const jsonText = await this.callGemini(prompt, true);
+    const jsonText = await this.callGemini(prompt, true, params.mode || 'quality');
     if (jsonText) {
       try {
         const parsed = safeParseJSON<any>(jsonText, false);
@@ -211,7 +213,7 @@ CRITICAL RULES:
 1. Transform this script into the target format (e.g., X thread: numbered posts; LinkedIn: professional breakdown; Reel/Short/TikTok: timed hook & body; IG Carousel: slide text).
 2. Return ONLY the formatted, ready-to-publish content without extra commentary.`;
 
-    const resultText = await this.callGemini(prompt);
+    const resultText = await this.callGemini(prompt, false, params.mode || 'quality');
     if (!resultText) {
       return this.fallbackService.repurpose(params);
     }
@@ -232,7 +234,7 @@ User Question: "${params.question}"
 
 Provide a concise, direct, and actionable response focusing on retention, pacing, hook strength, and overall script quality.`;
 
-    const resultText = await this.callGemini(prompt);
+    const resultText = await this.callGemini(prompt, false, params.mode || 'quality');
     if (!resultText) {
       return this.fallbackService.askAboutScript(params);
     }

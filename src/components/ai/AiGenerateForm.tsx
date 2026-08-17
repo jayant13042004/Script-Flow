@@ -23,6 +23,9 @@ export const AiGenerateForm: React.FC<AiGenerateFormProps> = ({ onGenerated, onC
   const [tone, setTone] = useState<Tone>('conversational');
   const [language, setLanguage] = useState('English');
   const [customInstructions, setCustomInstructions] = useState('');
+  const [mode, setMode] = useState<'fast' | 'quality'>(() => {
+    return (localStorage.getItem('scriptflow_ai_mode') as 'fast' | 'quality') || 'quality';
+  });
   
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AiGenerateResponse | null>(null);
@@ -40,7 +43,8 @@ export const AiGenerateForm: React.FC<AiGenerateFormProps> = ({ onGenerated, onC
         duration,
         tone,
         language,
-        customInstructions
+        customInstructions,
+        mode
       });
       setResult(response);
     } catch (error) {
@@ -62,9 +66,40 @@ export const AiGenerateForm: React.FC<AiGenerateFormProps> = ({ onGenerated, onC
             <Sparkles className="w-5 h-5 text-indigo-600" />
             <h2 className="text-lg font-semibold text-gray-800">Generate Script with AI</h2>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-md text-gray-500 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Speed vs Quality Mode Toggle */}
+            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-gray-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setMode('fast')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                  mode === 'fast'
+                    ? 'bg-amber-400 text-gray-950 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+                title="Fast Mode: Instant response (~300ms)"
+              >
+                ⚡ Fast Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('quality')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                  mode === 'quality'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+                title="Quality Mode: In-depth reasoning & retention structure"
+              >
+                🎯 High Quality
+              </button>
+            </div>
+
+            <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-md text-gray-500 transition-colors ml-1">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">

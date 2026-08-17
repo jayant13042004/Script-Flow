@@ -13,8 +13,8 @@ import type {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class MockAiService implements AiService {
-  async improveText({ selectedText, instruction }: ImproveTextParams): Promise<AiTextResponse> {
-    await delay(1200);
+  async improveText({ selectedText, instruction, mode }: ImproveTextParams): Promise<AiTextResponse> {
+    await delay(mode === 'fast' ? 150 : 600);
 
     const lowerInstruction = instruction.toLowerCase();
     let resultText = selectedText;
@@ -41,7 +41,7 @@ export class MockAiService implements AiService {
   }
 
   async generateScript(params: GenerateScriptParams): Promise<AiGenerateResponse> {
-    await delay(1800);
+    await delay(params.mode === 'fast' ? 250 : 800);
 
     const topic = params.topic || 'Content Creation';
     const platform = params.platform || 'youtube-shorts';

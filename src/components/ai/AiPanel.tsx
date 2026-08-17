@@ -60,6 +60,15 @@ export const AiPanel: React.FC<AiPanelProps> = ({
 
   if (!isOpen) return null;
 
+  const [aiMode, setAiMode] = useState<'fast' | 'quality'>(() => {
+    return (localStorage.getItem('scriptflow_ai_mode') as 'fast' | 'quality') || 'quality';
+  });
+
+  const handleModeChange = (newMode: 'fast' | 'quality') => {
+    setAiMode(newMode);
+    localStorage.setItem('scriptflow_ai_mode', newMode);
+  };
+
   const handleSendMessage = async (promptToSend?: string) => {
     const prompt = (promptToSend || inputMessage).trim();
     if (!prompt || isLoading) return;
@@ -88,6 +97,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
           selectedText: currentSelection,
           instruction: prompt,
           fullScriptContext: plainText,
+          mode: aiMode,
         });
         responseText = res.result;
       } else {
@@ -95,6 +105,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
         const res = await aiService.askAboutScript({
           question: prompt,
           scriptContext: `Title: ${title}\n\n${plainText || 'Empty script draft'}`,
+          mode: aiMode,
         });
         responseText = res.result;
       }
@@ -141,9 +152,38 @@ export const AiPanel: React.FC<AiPanelProps> = ({
             <p className="text-[11px] text-gray-400 mt-0.5">Your video co-writer & strategist</p>
           </div>
         </div>
+
+        {/* Speed / Quality Mode Toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+          <button
+            type="button"
+            onClick={() => handleModeChange('fast')}
+            className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+              aiMode === 'fast'
+                ? 'bg-amber-400 text-gray-950 shadow-2xs'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            title="Fast Mode: Instant responses (~300ms)"
+          >
+            ⚡ Fast
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('quality')}
+            className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+              aiMode === 'quality'
+                ? 'bg-indigo-600 text-white shadow-2xs'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            title="Quality Mode: Deep reasoning & best results"
+          >
+            🎯 Quality
+          </button>
+        </div>
+
         <button
           onClick={onClose}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ml-1"
         >
           <X className="w-4 h-4" />
         </button>
@@ -162,6 +202,10 @@ export const AiPanel: React.FC<AiPanelProps> = ({
             <span>Full script context active</span>
           </div>
         )}
+
+        <span className="text-[10px] text-gray-400 font-mono">
+          {aiMode === 'fast' ? '⚡ Ultra Fast' : '🎯 High Precision'}
+        </span>
       </div>
 
       {/* Chat Messages Log */}
