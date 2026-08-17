@@ -122,7 +122,17 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
                 key={size.value}
                 type="button"
                 onClick={() => {
-                  (editor.chain().focus() as any).setFontSize(size.value);
+                  const { empty, $from } = editor.state.selection;
+                  if (empty && $from.parent && $from.parent.textContent) {
+                    editor
+                      .chain()
+                      .focus()
+                      .setTextSelection({ from: $from.start(), to: $from.end() })
+                      .setFontSize(size.value)
+                      .run();
+                  } else {
+                    editor.chain().focus().setFontSize(size.value).run();
+                  }
                   setShowFontSizePicker(false);
                 }}
                 className={`w-full text-left px-2 py-1.5 text-xs rounded-lg flex items-center justify-between transition-colors ${
@@ -139,7 +149,7 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
             <button
               type="button"
               onClick={() => {
-                (editor.chain().focus() as any).unsetFontSize();
+                editor.chain().focus().unsetFontSize().run();
                 setShowFontSizePicker(false);
               }}
               className="w-full text-left px-2 py-1 text-[11px] text-gray-500 hover:bg-gray-50 rounded-lg"

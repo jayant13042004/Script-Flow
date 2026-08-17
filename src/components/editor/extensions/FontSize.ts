@@ -59,13 +59,13 @@ export const FontSize = Mark.create({
     return {
       setFontSize:
         (size: string) =>
-        ({ chain, editor }) => {
-          return chain().setMark('fontSize', { size }).run();
+        ({ commands }) => {
+          return commands.setMark(this.name, { size });
         },
       unsetFontSize:
         () =>
-        ({ chain }) => {
-          return chain().unsetMark('fontSize').run();
+        ({ commands }) => {
+          return commands.unsetMark(this.name);
         },
     };
   },
