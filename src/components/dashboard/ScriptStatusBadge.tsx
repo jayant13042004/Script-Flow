@@ -49,7 +49,7 @@ export function ScriptStatusBadge({ status, onChange, readOnly = false }: Script
   }
 
   return (
-    <div className="relative inline-block z-30" ref={dropdownRef}>
+    <div className="relative inline-block z-50" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}

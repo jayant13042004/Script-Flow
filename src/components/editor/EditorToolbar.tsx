@@ -98,7 +98,7 @@ export function EditorToolbar({ editor, onOpenHandwriting }: EditorToolbarProps)
   const currentFontSize = editor.getAttributes('textStyle').fontSize || '16px';
 
   return (
-    <div className="sticky top-0 z-20 flex flex-wrap items-center gap-0.5 p-1.5 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-2xs">
+    <div className="relative z-10 flex flex-wrap items-center gap-0.5 px-4 py-1.5 bg-white border-t border-gray-100">
       {/* Font Size Dropdown */}
       <div className="relative inline-block" ref={fontSizeRef}>
         <button
