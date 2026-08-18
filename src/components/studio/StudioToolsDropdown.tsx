@@ -14,6 +14,7 @@ interface StudioToolsDropdownProps {
   onOpenShortExtractor: () => void;
   onOpenHandwriting?: () => void;
   onInsertInlineDrawing?: () => void;
+  onOpenPlaylistModal?: () => void;
   onOpenShareModal: () => void;
   onOpenAnalytics: () => void;
   onOpenExport: () => void;
@@ -29,6 +30,7 @@ export function StudioToolsDropdown({
   onOpenShortExtractor,
   onOpenHandwriting,
   onInsertInlineDrawing,
+  onOpenPlaylistModal,
   onOpenShareModal,
   onOpenAnalytics,
   onOpenExport,
@@ -162,6 +164,20 @@ export function StudioToolsDropdown({
             <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
               Share & Manage
             </div>
+
+            {onOpenPlaylistModal && (
+              <button
+                type="button"
+                onClick={() => handleAction(onOpenPlaylistModal)}
+                className="w-full text-left px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2.5 transition-colors font-medium"
+              >
+                <Share2 className="w-4 h-4 text-indigo-600 hidden" />
+                <span className="w-4 h-4 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold">
+                  PL
+                </span>
+                <span>Add / Manage Series Playlist</span>
+              </button>
+            )}
 
             <button
               type="button"

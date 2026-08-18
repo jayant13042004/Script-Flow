@@ -42,6 +42,7 @@ import { ScriptTranslatorModal } from '../components/studio/ScriptTranslatorModa
 import { ShortExtractorModal } from '../components/studio/ShortExtractorModal';
 import { HandwritingModal } from '../components/studio/HandwritingModal';
 import { StudioToolsDropdown } from '../components/studio/StudioToolsDropdown';
+import { AddToPlaylistModal } from '../components/playlist/AddToPlaylistModal';
 import { exportToPdf, downloadFile } from '../lib/exportImport';
 import { markdownToHtml, isMarkdownText } from '../lib/markdown';
 import { Mic, Tv, Share2, Upload, Volume2, BarChart2, Layers } from 'lucide-react';
@@ -61,8 +62,8 @@ type PanelType = 'ai' | 'hooks' | 'planner' | 'structure' | 'repurpose';
 const panelButtons: { id: PanelType; icon: React.ElementType; label: string }[] = [
   { id: 'ai', icon: Sparkles, label: 'AI Assistant' },
   { id: 'hooks', icon: Lightbulb, label: 'Hook Library' },
-  { id: 'planner', icon: Clapperboard, label: 'B-Roll & Planner' },
-  { id: 'structure', icon: Layout, label: 'Structure Frameworks' },
+  { id: 'planner', icon: Clapperboard, label: 'B-Roll & Shots' },
+  { id: 'structure', icon: Layout, label: 'Structure' },
   { id: 'repurpose', icon: RefreshCw, label: 'Repurpose' },
 ];
 
@@ -71,16 +72,17 @@ export default function EditorPage() {
   const navigate = useNavigate();
 
   const {
-    title, setTitle, setContent, setSelectedText, plainText,
-    wordCount, characterCount, estimatedDuration: duration,
-    isDirty, lastSaved, isFullscreen, toggleFullscreen,
-    activePanel, setActivePanel, togglePanel, showFindReplace,
-    toggleFindReplace, setScriptId, setIsDirty, setLastSaved, reset
+    content, plainText, title, wordCount, characterCount,
+    estimatedDuration: duration, lastSaved, isDirty, isFullscreen,
+    activePanel, showFindReplace,
+    setContent, setTitle, setSelectedText, setIsDirty,
+    setLastSaved, toggleFullscreen, setActivePanel, togglePanel,
+    toggleFindReplace, reset, setScriptId
   } = useEditorStore();
 
   const {
-    scripts, loadScripts, loadScript, createScript, updateScript, deleteScript, duplicateScript,
-    createVersion, getVersions
+    scripts, playlists, loadScripts, loadPlaylists, loadScript, createScript, updateScript, deleteScript, duplicateScript,
+    createPlaylist, createVersion, getVersions
   } = useScriptStore();
 
   const { user } = useAuthStore();
@@ -99,6 +101,7 @@ export default function EditorPage() {
   const [showTranslatorModal, setShowTranslatorModal] = useState(false);
   const [showShortExtractorModal, setShowShortExtractorModal] = useState(false);
   const [showHandwritingModal, setShowHandwritingModal] = useState(false);
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [currentScriptObj, setCurrentScriptObj] = useState<any>(null);
@@ -190,8 +193,9 @@ export default function EditorPage() {
 
   // Load script on mount
   useEffect(() => {
-    if (user?.id && scripts.length === 0) {
-      loadScripts(user.id);
+    if (user?.id) {
+      if (scripts.length === 0) loadScripts(user.id);
+      if (playlists.length === 0) loadPlaylists(user.id);
     }
     if (id) {
       setScriptId(id);
@@ -403,15 +407,31 @@ export default function EditorPage() {
 
           {/* Right */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Series / Playlist indicator */}
-            {currentScriptObj?.playlistId && (
-              <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg shrink-0">
-                <Layers className="w-3.5 h-3.5" />
+            {/* Series / Playlist interactive indicator */}
+            {currentScriptObj?.playlistId ? (
+              <button
+                type="button"
+                onClick={() => setShowAddToPlaylistModal(true)}
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg shrink-0 transition-colors cursor-pointer"
+                title="Change Series / Playlist for this script"
+              >
+                <Layers className="w-3.5 h-3.5 text-indigo-600" />
                 <span>
-                  {useScriptStore.getState().playlists.find(p => p.id === currentScriptObj.playlistId)?.name || 'Series'}
+                  {playlists.find((p) => p.id === currentScriptObj.playlistId)?.name || 'Series'}
                   {currentScriptObj.episodeNumber ? ` • Ep ${currentScriptObj.episodeNumber}` : ''}
                 </span>
-              </span>
+                <ChevronDown className="w-3 h-3 text-indigo-400" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddToPlaylistModal(true)}
+                className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-lg shrink-0 transition-colors"
+                title="Add this script to a Series / Playlist"
+              >
+                <Layers className="w-3.5 h-3.5 text-gray-400" />
+                <span>+ Add to Series</span>
+              </button>
             )}
 
             {/* Status Dropdown */}
@@ -469,6 +489,7 @@ export default function EditorPage() {
               onOpenShortExtractor={() => setShowShortExtractorModal(true)}
               onOpenHandwriting={() => setShowHandwritingModal(true)}
               onInsertInlineDrawing={() => (editor?.chain().focus() as any).insertDrawing().run()}
+              onOpenPlaylistModal={() => setShowAddToPlaylistModal(true)}
               onOpenShareModal={() => setShowShareModal(true)}
               onOpenAnalytics={() => setShowAnalyticsModal(true)}
               onOpenExport={() => setShowExportModal(true)}
@@ -896,6 +917,24 @@ export default function EditorPage() {
             editor.commands.insertContent(text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>'));
             setIsDirty(true);
           }
+        }}
+      />
+
+      {/* 7. Add / Manage Series & Playlist Modal */}
+      <AddToPlaylistModal
+        isOpen={showAddToPlaylistModal}
+        onClose={() => setShowAddToPlaylistModal(false)}
+        script={currentScriptObj}
+        playlists={playlists}
+        onSave={async (scriptId, playlistId, episodeNumber) => {
+          await updateScript(scriptId, { playlistId, episodeNumber });
+          setCurrentScriptObj((prev: any) => prev ? { ...prev, playlistId, episodeNumber } : prev);
+        }}
+        onCreatePlaylist={async (name, desc, color) => {
+          if (user?.id) {
+            return await createPlaylist(user.id, name, desc, color);
+          }
+          throw new Error('User not authenticated');
         }}
       />
     </div>
